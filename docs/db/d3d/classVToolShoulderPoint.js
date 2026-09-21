@@ -1,0 +1,26 @@
+var classVToolShoulderPoint =
+[
+    [ "VToolShoulderPoint", "db/d3d/classVToolShoulderPoint.html#ada3a33758d714e9269be46d77de01c4b", null ],
+    [ "Create", "db/d3d/classVToolShoulderPoint.html#a4c425512eef44f6586113a4287e5bcf0", null ],
+    [ "Create", "db/d3d/classVToolShoulderPoint.html#a012d608f6b0f8d1f08f55f20564e3a69", null ],
+    [ "FindPoint", "db/d3d/classVToolShoulderPoint.html#acda09c837ba4e327c53e4e63c6f827db", null ],
+    [ "GetP2Line", "db/d3d/classVToolShoulderPoint.html#af5712763deeec50c4cb6eae37513b3af", null ],
+    [ "getPShoulder", "db/d3d/classVToolShoulderPoint.html#a22d649fd7aad709504d8fb1c461580bf", null ],
+    [ "makeToolTip", "db/d3d/classVToolShoulderPoint.html#a2949cb1a12be6039451113ef4c1886cc", null ],
+    [ "ReadToolAttributes", "db/d3d/classVToolShoulderPoint.html#ab3a616cd81654880366383929b3d9b8a", null ],
+    [ "RemoveReferens", "db/d3d/classVToolShoulderPoint.html#a7aa3e479b193c106ac25c6c1431f338d", null ],
+    [ "SaveDialog", "db/d3d/classVToolShoulderPoint.html#ab572a62f6b3e43fefa3e6257895bbd19", null ],
+    [ "SaveOptions", "db/d3d/classVToolShoulderPoint.html#a17020c5246071910e379185b6a57e3f5", null ],
+    [ "SecondPointName", "db/d3d/classVToolShoulderPoint.html#a3830be5b26037fc4e9431217cc3becb8", null ],
+    [ "setDialog", "db/d3d/classVToolShoulderPoint.html#a5fb61ecdbba7603e87960e7efe1d3d93", null ],
+    [ "SetP2Line", "db/d3d/classVToolShoulderPoint.html#a12f1eefb2f1a4aa5de016f3fd4072bab", null ],
+    [ "setPShoulder", "db/d3d/classVToolShoulderPoint.html#ade01d6176dd6ed5109470a845f29c41a", null ],
+    [ "SetVisualization", "db/d3d/classVToolShoulderPoint.html#a8e8b45ec2edd9148454acfc8f3561283", null ],
+    [ "ShoulderPointName", "db/d3d/classVToolShoulderPoint.html#a097609a4135a150b72defddf9c090e32", null ],
+    [ "showContextMenu", "db/d3d/classVToolShoulderPoint.html#a1f64767e68923a30ae20201c8646614e", null ],
+    [ "ShowVisualization", "db/d3d/classVToolShoulderPoint.html#aae367f28a69b55708629df8b7e11f2c9", null ],
+    [ "type", "db/d3d/classVToolShoulderPoint.html#a2bc989642412e4b630cc4f77a1fddc6b", null ],
+    [ "p2Line", "db/d3d/classVToolShoulderPoint.html#a5a21b3c9197787d24501d4f61b5bb438", null ],
+    [ "pShoulder", "db/d3d/classVToolShoulderPoint.html#a66b4e09b89bef73fe26bdae225d559f5", null ],
+    [ "ToolType", "db/d3d/classVToolShoulderPoint.html#a5feb758e39e43f3e209746d2d460e958", null ]
+];

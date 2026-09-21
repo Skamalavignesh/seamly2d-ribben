@@ -1,0 +1,4 @@
+<map id="RibbenDispatcher" name="RibbenDispatcher">
+<area shape="rect" id="node1" title=" " alt="" coords="5,292,168,399"/>
+<area shape="rect" id="node2" href="$d3/da8/classRibbenHost.html" title="RibbenHost is what a live JSON&#45;RPC request is actually dispatched against: a running Seamly2D window ..." alt="" coords="7,5,166,229"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="MainWindow" name="MainWindow">
+<area shape="rect" id="node1" title="The MainWindow class main windows." alt="" coords="123,1276,340,2321"/>
+<area shape="rect" id="node2" href="$de/d1a/classMainWindowsNoGUI.html" title=" " alt="" coords="5,403,239,1228"/>
+<area shape="rect" id="node3" href="$dc/d59/classVAbstractMainWindow.html" title=" " alt="" coords="16,131,228,355"/>
+<area shape="rect" id="node4" title=" " alt="" coords="64,5,180,83"/>
+<area shape="rect" id="node5" href="$d3/da8/classRibbenHost.html" title="RibbenHost is what a live JSON&#45;RPC request is actually dispatched against: a running Seamly2D window ..." alt="" coords="263,703,421,927"/>
+</map>
