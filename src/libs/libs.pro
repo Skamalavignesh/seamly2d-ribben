@@ -1,6 +1,7 @@
 message("Entering libs.pro")
 TEMPLATE = subdirs
 SUBDIRS = \
+    ribben \
     qmuparser \
     vpropertyexplorer \
     ifc \

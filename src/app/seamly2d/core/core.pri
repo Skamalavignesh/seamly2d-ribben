@@ -13,4 +13,5 @@ SOURCES += \
     $$PWD/vformulaproperty.cpp \
     $$PWD/vformulapropertyeditor.cpp \
     $$PWD/vtooloptionspropertybrowser.cpp \
-    $$PWD/vcmdexport.cpp
+    $$PWD/vcmdexport.cpp \
+    $$PWD/ribbenmainwindowhost.cpp

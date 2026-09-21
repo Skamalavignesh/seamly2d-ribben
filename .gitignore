@@ -183,3 +183,9 @@ target_wrapper.sh
 
 # documents
 docs/
+
+# local build/debug scratch (logs, ad-hoc screenshots) -- not build output,
+# just artifacts from manually driving a build/test session
+/build*.log
+/seamly2d_run*.log
+/seamly2d_*.png

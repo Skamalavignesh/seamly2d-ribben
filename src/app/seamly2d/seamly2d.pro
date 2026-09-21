@@ -285,6 +285,15 @@ DEPENDPATH += $$PWD/../../libs/ifc
 win32:!win32-g++: PRE_TARGETDEPS += $$OUT_PWD/../../libs/ifc/$${DESTDIR}/ifc.lib
 else:unix|win32-g++: PRE_TARGETDEPS += $$OUT_PWD/../../libs/ifc/$${DESTDIR}/libifc.a
 
+#Ribben addon static library (depend on nothing but Qt)
+unix|win32: LIBS += -L$$OUT_PWD/../../libs/ribben/$${DESTDIR}/ -lribben
+
+INCLUDEPATH += $$PWD/../../libs/ribben
+DEPENDPATH += $$PWD/../../libs/ribben
+
+win32:!win32-g++: PRE_TARGETDEPS += $$OUT_PWD/../../libs/ribben/$${DESTDIR}/ribben.lib
+else:unix|win32-g++: PRE_TARGETDEPS += $$OUT_PWD/../../libs/ribben/$${DESTDIR}/libribben.a
+
 #VMisc static library
 unix|win32: LIBS += -L$$OUT_PWD/../../libs/vmisc/$${DESTDIR}/ -lvmisc
 

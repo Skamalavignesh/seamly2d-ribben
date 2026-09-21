@@ -1,3 +1,6 @@
+#Ribben addon static library
+INCLUDEPATH += $${PWD}/ribben
+
 #VTools static library
 INCLUDEPATH += $${PWD}/vtools
 

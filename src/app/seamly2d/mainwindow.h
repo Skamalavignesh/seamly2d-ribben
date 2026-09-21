@@ -59,6 +59,7 @@
 #include "mainwindowsnogui.h"
 #include "core/vcmdexport.h"
 #include "../vmisc/vlockguard.h"
+#include "../ribben/ribbenhost.h"
 
 #include <QMap>
 #include <QPointer>
@@ -94,11 +95,12 @@ class ImageItem;
 
 class MouseCoordinates;
 class PenToolBar;
+class RibbenServer;
 
 /**
  * @brief The MainWindow class main windows.
  */
-class MainWindow : public MainWindowsNoGUI
+class MainWindow : public MainWindowsNoGUI, public RibbenHost
 {
     Q_OBJECT
 public:
@@ -106,6 +108,37 @@ public:
     virtual ~MainWindow() override;
 
     bool LoadPattern(const QString &fileName, const QString &customMeasureFile = QString());
+
+    // RibbenHost interface (see ribbenhost.h) -- lets the addon's live
+    // JSON-RPC server (core/ribbenmainwindowhost.cpp) act on this window's
+    // open pattern.
+    QJsonObject ping() override;
+    QJsonObject getStatus() override;
+    QJsonObject readPattern() override;
+    QJsonArray  listIncrements() override;
+    QJsonObject updateIncrement(const QString &name, const QString &formula) override;
+    QJsonObject setPatternNotes(const QString &text) override;
+    QJsonArray  listPoints(const QString &draftBlockName) override;
+    QJsonObject addPointSingle(const QString &draftBlockName, const QString &name, double x, double y) override;
+    QJsonObject addPointEndLine(
+        const QString &draftBlockName, const QString &name, const QString &basePoint,
+        const QString &length, const QString &angle, const QString &lineType) override;
+    QJsonObject addPointAlongLine(
+        const QString &draftBlockName, const QString &name, const QString &firstPoint,
+        const QString &secondPoint, const QString &length) override;
+    QJsonObject addLine(
+        const QString &draftBlockName, const QString &firstPoint, const QString &secondPoint,
+        const QString &lineType) override;
+    QJsonObject addSpline(
+        const QString &draftBlockName, const QString &firstPoint, const QString &secondPoint,
+        const QString &angle1, const QString &length1, const QString &angle2, const QString &length2) override;
+    QJsonObject addArc(
+        const QString &draftBlockName, const QString &centerPoint, const QString &radius,
+        const QString &angle1, const QString &angle2) override;
+    QJsonArray  listPieces(const QString &draftBlockName) override;
+    QJsonObject addPiece(
+        const QString &draftBlockName, const QString &name, const QJsonArray &outline,
+        bool seamAllowance, const QString &seamAllowanceWidth) override;
 
 public slots:
     void processCommandLine();
@@ -181,6 +214,7 @@ private slots:
     void showLayoutPages(int index);
     void Preferences();
     void updatePreferences();
+    void toggleRibbenAddon(bool checked);
 #if defined(Q_OS_MAC)
     void CreateMeasurements();
 #endif
@@ -337,6 +371,12 @@ private:
     QComboBox                        *m_zoomToPointComboBox;
 
     QSharedPointer<MeasurementDoc>    m_measurements;
+
+    RibbenServer                     *m_ribbenServer;  /// @brief m_ribbenServer embedded live MCP/RPC server (Ribben addon), null until first enabled.
+    QAction                          *m_ribbenAction;   /// @brief m_ribbenAction "Enable Ribben Addon" checkable menu action.
+
+    void                              initRibbenAddon();
+    void                              ribbenReparseOrRollback(QDomElement &parent, QDomElement &child);
 
     void                              removeEmptyLinesText(const QString &filename, bool isPattern);
     void                              saveBackupFile(const QString &filename) const;

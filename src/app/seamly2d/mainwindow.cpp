@@ -210,6 +210,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_penReset(nullptr)
     , m_zoomToPointComboBox(nullptr)
     , m_measurements(nullptr)
+    , m_ribbenServer(nullptr)
+    , m_ribbenAction(nullptr)
 
     // define Seamly2D main window
     {
@@ -261,6 +263,7 @@ MainWindow::MainWindow(QWidget *parent)
         // initialize docks to contain the toolbars and create menuts.
         initializeDocksContain();
         createMenus();
+        initRibbenAddon();
 
         // Initialize toolbars for draft, point name, and modes.
         initializeDraftToolBar();
