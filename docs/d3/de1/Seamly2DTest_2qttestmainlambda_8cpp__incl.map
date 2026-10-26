@@ -1,35 +1,35 @@
 <map id="src/test/Seamly2DTest/qttestmainlambda.cpp" name="src/test/Seamly2DTest/qttestmainlambda.cpp">
-<area shape="rect" id="node1" title=" " alt="" coords="1914,5,2087,45"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,93,68,119"/>
-<area shape="rect" id="node3" href="$d0/d7c/tst__vposter_8h.html" title=" " alt="" coords="543,93,650,119"/>
-<area shape="rect" id="node5" href="$d4/d6c/tst__vabstractpiece_8h.html" title=" " alt="" coords="3011,93,3166,119"/>
-<area shape="rect" id="node7" href="$d8/d07/tst__vspline_8h.html" title=" " alt="" coords="3191,93,3296,119"/>
-<area shape="rect" id="node8" href="$d6/d3d/tst__nameregexp_8h.html" title=" " alt="" coords="675,93,815,119"/>
-<area shape="rect" id="node9" href="$d7/dd3/tst__vlayoutdetail_8h.html" title=" " alt="" coords="3321,93,3465,119"/>
-<area shape="rect" id="node10" href="$d1/dd9/tst__varc_8h.html" title=" " alt="" coords="839,93,925,119"/>
-<area shape="rect" id="node11" href="$df/df7/tst__vellipticalarc_8h.html" title=" " alt="" coords="2540,93,2683,119"/>
-<area shape="rect" id="node12" href="$d1/ded/tst__qmutokenparser_8h.html" title=" " alt="" coords="1919,93,2082,119"/>
-<area shape="rect" id="node14" href="$dd/dd7/tst__vmeasurements_8h.html" title=" " alt="" coords="949,93,1113,119"/>
-<area shape="rect" id="node15" href="$d1/d29/tst__vlockguard_8h.html" title=" " alt="" coords="1138,93,1269,119"/>
-<area shape="rect" id="node16" href="$d1/d78/tst__misc_8h.html" title=" " alt="" coords="1293,93,1383,119"/>
-<area shape="rect" id="node17" href="$d2/d43/tst__vcommandline_8h.html" title=" " alt="" coords="1407,93,1562,119"/>
-<area shape="rect" id="node18" href="$d2/de1/tst__vpiece_8h.html" title=" " alt="" coords="2707,93,2809,119"/>
-<area shape="rect" id="node19" href="$db/d9b/tst__findpoint_8h.html" title=" " alt="" coords="1586,93,1701,119"/>
-<area shape="rect" id="node20" href="$d5/d09/tst__vabstractcurve_8h.html" title=" " alt="" coords="2833,93,2987,119"/>
-<area shape="rect" id="node21" href="$d2/da3/tst__vcubicbezierpath_8h.html" title=" " alt="" coords="1725,93,1895,119"/>
-<area shape="rect" id="node22" href="$d5/d95/tst__vgobject_8h.html" title=" " alt="" coords="93,93,207,119"/>
-<area shape="rect" id="node23" href="$d8/d23/tst__vsplinepath_8h.html" title=" " alt="" coords="232,93,367,119"/>
-<area shape="rect" id="node24" href="$d7/d4a/tst__vpointf_8h.html" title=" " alt="" coords="2413,93,2516,119"/>
-<area shape="rect" id="node27" href="$d1/dd5/tst__readval_8h.html" title=" " alt="" coords="2282,93,2389,119"/>
-<area shape="rect" id="node28" href="$db/de1/tst__vtranslatevars_8h.html" title=" " alt="" coords="2106,93,2258,119"/>
-<area shape="rect" id="node29" href="$d5/d13/tst__vtoolmove_8h.html" title=" " alt="" coords="391,93,519,119"/>
-<area shape="rect" id="node30" title=" " alt="" coords="3489,93,3598,119"/>
-<area shape="rect" id="node31" title=" " alt="" coords="3623,93,3792,119"/>
-<area shape="rect" id="node32" title=" " alt="" coords="3816,93,4039,119"/>
-<area shape="rect" id="node33" title=" " alt="" coords="4063,93,4245,119"/>
-<area shape="rect" id="node4" title=" " alt="" coords="1166,167,1241,192"/>
-<area shape="rect" id="node6" title=" " alt="" coords="2919,167,3080,192"/>
-<area shape="rect" id="node13" title=" " alt="" coords="2145,167,2219,192"/>
-<area shape="rect" id="node25" title=" " alt="" coords="2414,167,2537,192"/>
-<area shape="rect" id="node26" title=" " alt="" coords="2259,167,2390,192"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1898,5,2071,50"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,98,68,126"/>
+<area shape="rect" id="node3" href="$d0/d7c/tst__vposter_8h.html" title=" " alt="" coords="538,98,644,126"/>
+<area shape="rect" id="node5" href="$d4/d6c/tst__vabstractpiece_8h.html" title=" " alt="" coords="2990,98,3144,126"/>
+<area shape="rect" id="node7" href="$d8/d07/tst__vspline_8h.html" title=" " alt="" coords="3168,98,3273,126"/>
+<area shape="rect" id="node8" href="$d6/d3d/tst__nameregexp_8h.html" title=" " alt="" coords="668,98,808,126"/>
+<area shape="rect" id="node9" href="$d7/dd3/tst__vlayoutdetail_8h.html" title=" " alt="" coords="3297,98,3440,126"/>
+<area shape="rect" id="node10" href="$d1/dd9/tst__varc_8h.html" title=" " alt="" coords="831,98,916,126"/>
+<area shape="rect" id="node11" href="$df/df7/tst__vellipticalarc_8h.html" title=" " alt="" coords="2522,98,2663,126"/>
+<area shape="rect" id="node12" href="$d1/ded/tst__qmutokenparser_8h.html" title=" " alt="" coords="1903,98,2066,126"/>
+<area shape="rect" id="node14" href="$dd/dd7/tst__vmeasurements_8h.html" title=" " alt="" coords="940,98,1104,126"/>
+<area shape="rect" id="node15" href="$d1/d29/tst__vlockguard_8h.html" title=" " alt="" coords="1128,98,1257,126"/>
+<area shape="rect" id="node16" href="$d1/d78/tst__misc_8h.html" title=" " alt="" coords="1282,98,1370,126"/>
+<area shape="rect" id="node17" href="$d2/d43/tst__vcommandline_8h.html" title=" " alt="" coords="1394,98,1548,126"/>
+<area shape="rect" id="node18" href="$d2/de1/tst__vpiece_8h.html" title=" " alt="" coords="2688,98,2788,126"/>
+<area shape="rect" id="node19" href="$db/d9b/tst__findpoint_8h.html" title=" " alt="" coords="1573,98,1687,126"/>
+<area shape="rect" id="node20" href="$d5/d09/tst__vabstractcurve_8h.html" title=" " alt="" coords="2813,98,2967,126"/>
+<area shape="rect" id="node21" href="$d2/da3/tst__vcubicbezierpath_8h.html" title=" " alt="" coords="1711,98,1879,126"/>
+<area shape="rect" id="node22" href="$d5/d95/tst__vgobject_8h.html" title=" " alt="" coords="92,98,205,126"/>
+<area shape="rect" id="node23" href="$d8/d23/tst__vsplinepath_8h.html" title=" " alt="" coords="230,98,363,126"/>
+<area shape="rect" id="node24" href="$d7/d4a/tst__vpointf_8h.html" title=" " alt="" coords="2396,98,2498,126"/>
+<area shape="rect" id="node27" href="$d1/dd5/tst__readval_8h.html" title=" " alt="" coords="2266,98,2372,126"/>
+<area shape="rect" id="node28" href="$db/de1/tst__vtranslatevars_8h.html" title=" " alt="" coords="2090,98,2242,126"/>
+<area shape="rect" id="node29" href="$d5/d13/tst__vtoolmove_8h.html" title=" " alt="" coords="388,98,515,126"/>
+<area shape="rect" id="node30" title=" " alt="" coords="3464,98,3572,126"/>
+<area shape="rect" id="node31" title=" " alt="" coords="3596,98,3765,126"/>
+<area shape="rect" id="node32" title=" " alt="" coords="3788,98,4010,126"/>
+<area shape="rect" id="node33" title=" " alt="" coords="4034,98,4215,126"/>
+<area shape="rect" id="node4" title=" " alt="" coords="1156,174,1229,201"/>
+<area shape="rect" id="node6" title=" " alt="" coords="2898,174,3058,201"/>
+<area shape="rect" id="node13" title=" " alt="" coords="2129,174,2202,201"/>
+<area shape="rect" id="node25" title=" " alt="" coords="2397,174,2519,201"/>
+<area shape="rect" id="node26" title=" " alt="" coords="2242,174,2372,201"/>
 </map>
