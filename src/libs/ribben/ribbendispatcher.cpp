@@ -109,6 +109,16 @@ QJsonObject RibbenDispatcher::invoke(const QString &method, const QJsonObject &p
         return result;
     }
 
+    if (method == QLatin1String("inspect_geometry"))
+    {
+        if (!params.contains(QStringLiteral("draft_block_name")))
+        {
+            throw RibbenError(RibbenError::InvalidParams,
+                               QStringLiteral("inspect_geometry needs \"draft_block_name\"."));
+        }
+        return m_host->inspectGeometry(params.value(QStringLiteral("draft_block_name")).toString());
+    }
+
     if (method == QLatin1String("add_point_single"))
     {
         if (!params.contains(QStringLiteral("draft_block_name")) || !params.contains(QStringLiteral("name")) ||

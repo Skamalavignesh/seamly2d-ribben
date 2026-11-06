@@ -86,6 +86,7 @@ Error:
 | `update_increment` | `name`, `formula` | `update_increment` (also live-recomputes geometry) |
 | `set_pattern_notes` | `text` | `set_pattern_notes` |
 | `list_points` | `draft_block_name` | `list_points` |
+| `inspect_geometry` | `draft_block_name` | live raw readback of points, lines, splines, arcs, and pieces |
 | `add_point_single` | `draft_block_name`, `name`, `x`, `y` | `add_point_single` |
 | `add_point_end_line` | `draft_block_name`, `name`, `base_point`, `length`, `angle`, `line_type`? | `add_point_end_line` |
 | `add_point_along_line` | `draft_block_name`, `name`, `first_point`, `second_point`, `length` | `add_point_along_line` |

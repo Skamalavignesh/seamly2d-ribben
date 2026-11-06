@@ -119,6 +119,7 @@ public:
     QJsonObject updateIncrement(const QString &name, const QString &formula) override;
     QJsonObject setPatternNotes(const QString &text) override;
     QJsonArray  listPoints(const QString &draftBlockName) override;
+    QJsonObject inspectGeometry(const QString &draftBlockName) override;
     QJsonObject addPointSingle(const QString &draftBlockName, const QString &name, double x, double y) override;
     QJsonObject addPointEndLine(
         const QString &draftBlockName, const QString &name, const QString &basePoint,

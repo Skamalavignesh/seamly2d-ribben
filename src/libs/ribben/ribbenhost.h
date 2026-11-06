@@ -139,6 +139,10 @@ public:
     /// attributes -- mirrors the file-based list_points tool.
     virtual QJsonArray listPoints(const QString &draftBlockName) = 0;
 
+    /// Raw calculation-layer points, lines, splines, and arcs, plus native
+    /// piece outlines, for verifying live mutations against the open document.
+    virtual QJsonObject inspectGeometry(const QString &draftBlockName) = 0;
+
     /// Adds an anchor point at explicit (x, y) canvas coordinates (in the
     /// pattern's own unit). The only point type with no dependencies.
     virtual QJsonObject addPointSingle(const QString &draftBlockName, const QString &name, double x, double y) = 0;

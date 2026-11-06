@@ -108,6 +108,25 @@ namespace
         return calculation;
     }
 
+    QJsonArray RibbenListElements(const QDomElement &parent, const QString &tagName)
+    {
+        QJsonArray result;
+        QDomElement element = parent.firstChildElement(tagName);
+        while (!element.isNull())
+        {
+            QJsonObject entry;
+            const QDomNamedNodeMap attrs = element.attributes();
+            for (int i = 0; i < attrs.count(); ++i)
+            {
+                const QDomAttr attr = attrs.item(i).toAttr();
+                entry.insert(attr.name(), attr.value());
+            }
+            result.append(entry);
+            element = element.nextSiblingElement(tagName);
+        }
+        return result;
+    }
+
     QDomElement RibbenFindPointByRef(VPattern *doc, const QString &ref)
     {
         const QDomNodeList points = doc->elementsByTagName(VAbstractPattern::TagPoint);
@@ -297,6 +316,7 @@ QJsonObject MainWindow::getStatus()
     result.insert(QStringLiteral("modified"), isWindowModified());
     result.insert(QStringLiteral("unit"), UnitsToStr(qApp->patternUnit()));
     result.insert(QStringLiteral("piece_count"), static_cast<int>(pattern->DataPieces()->count()));
+    result.insert(QStringLiteral("active_draft_block"), doc->getActiveDraftBlockName());
     return result;
 }
 
@@ -452,6 +472,28 @@ QJsonArray MainWindow::listPoints(const QString &draftBlockName)
         result.append(entry);
         point = point.nextSiblingElement(VAbstractPattern::TagPoint);
     }
+    return result;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+QJsonObject MainWindow::inspectGeometry(const QString &draftBlockName)
+{
+    const QDomElement draftBlock = RibbenRequireDraftBlock(doc, draftBlockName);
+    const QDomElement calculation = RibbenRequireCalculation(draftBlock);
+    const QDomElement modeling = RibbenRequireModeling(draftBlock);
+
+    QJsonObject result;
+    result.insert(QStringLiteral("draft_block"), draftBlockName);
+    result.insert(QStringLiteral("points"), listPoints(draftBlockName));
+    result.insert(QStringLiteral("lines"), RibbenListElements(calculation, VAbstractPattern::TagLine));
+    result.insert(QStringLiteral("splines"), RibbenListElements(calculation, VAbstractPattern::TagSpline));
+    result.insert(QStringLiteral("arcs"), RibbenListElements(calculation, VAbstractPattern::TagArc));
+    QJsonObject modelingObjects;
+    modelingObjects.insert(QStringLiteral("points"), RibbenListElements(modeling, VAbstractPattern::TagPoint));
+    modelingObjects.insert(QStringLiteral("splines"), RibbenListElements(modeling, VAbstractPattern::TagSpline));
+    modelingObjects.insert(QStringLiteral("arcs"), RibbenListElements(modeling, VAbstractPattern::TagArc));
+    result.insert(QStringLiteral("modeling"), modelingObjects);
+    result.insert(QStringLiteral("pieces"), listPieces(draftBlockName));
     return result;
 }
 
