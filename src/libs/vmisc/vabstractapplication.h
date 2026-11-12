@@ -135,6 +135,15 @@ public:
     QString         getFilePath() const;
     void            setFilePath(const QString &value);
 
+    /**
+     * @brief Non-interactive mode: while set, code that would open a modal dialog (a formula error, a warning
+     * message box, "can't find intersection point") must report the problem without waiting for a person:
+     * formula errors are thrown and warnings are only logged. The Ribben addon sets it while it re-parses the
+     * pattern for a live request, because a modal dialog there would block the request indefinitely.
+     */
+    bool            isNonInteractive() const { return m_nonInteractive; }
+    void            setNonInteractive(bool value) { m_nonInteractive = value; }
+
 protected:
     QUndoStack         *undoStack;
 
@@ -174,6 +183,8 @@ private:
      * we can allow user use Undo option.
      */
     bool               openingPattern;
+
+    bool               m_nonInteractive = false;
 
     void ClearTranslation();
 };

@@ -236,7 +236,9 @@ inline void noisyFailureMsgHandler(QtMsgType type, const QMessageLogContext &con
 
         if (type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg)
         {
-            if (Application2D::isGUIMode())
+            // In non-interactive mode (a live Ribben request) the message is only logged above: a modal box
+            // here would block the request until someone clicks it.
+            if (Application2D::isGUIMode() && !qApp->isNonInteractive())
             {
                 if (topWinAllowsPop)
                 {

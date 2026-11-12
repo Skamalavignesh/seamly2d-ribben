@@ -200,7 +200,7 @@ qreal VAbstractTool::CheckFormula(const quint32 &toolId, QString &formula, VCont
                    << "Expression:  " << error.GetExpr() << "\n"
                    << "--------------------------------------";
 
-        if (qApp->isAppInGUIMode())
+        if (qApp->isAppInGUIMode() && !qApp->isNonInteractive())
         {
             QScopedPointer<DialogUndo> dialogUndo(new DialogUndo(qApp->getMainWindow()));
             forever

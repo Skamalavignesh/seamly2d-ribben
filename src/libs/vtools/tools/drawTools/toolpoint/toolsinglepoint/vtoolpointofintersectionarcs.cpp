@@ -152,7 +152,15 @@ VToolPointOfIntersectionArcs *VToolPointOfIntersectionArcs::Create(const quint32
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.setText(msg);
         msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.exec();
+        if (qApp->isNonInteractive())
+        {
+            // A live Ribben request: log the problem instead of blocking on a modal box.
+            qWarning("%s", qUtf8Printable(msgBox.text()));
+        }
+        else
+        {
+            msgBox.exec();
+        }
     }
 
     quint32 id = _id;
