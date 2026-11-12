@@ -48,6 +48,7 @@ public:
 
 private:
     RibbenHost *m_host;
+    mutable bool m_inFlight = false;   // a request is being handled (see dispatch)
 
     QJsonObject invoke(const QString &method, const QJsonObject &params) const;
 };

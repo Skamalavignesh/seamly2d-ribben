@@ -140,6 +140,39 @@ public:
     QJsonObject addPiece(
         const QString &draftBlockName, const QString &name, const QJsonArray &outline,
         bool seamAllowance, const QString &seamAllowanceWidth) override;
+    QString     busyReason() override;
+    // core/ribbenhost_evaluate.cpp
+    QJsonObject evaluate(const QString &draftBlockName, const QJsonArray &variables,
+                         const QJsonArray &formulas) override;
+    QJsonObject checkFormula(const QString &formula) override;
+    // core/ribbenhost_nativetools.cpp
+    QJsonObject addPointLineIntersect(
+        const QString &draftBlockName, const QString &name, const QString &p1Line1, const QString &p2Line1,
+        const QString &p1Line2, const QString &p2Line2) override;
+    QJsonObject addPointCurveIntersectAxis(
+        const QString &draftBlockName, const QString &name, const QString &basePoint, const QString &curve,
+        const QString &angle, const QString &lineType) override;
+    QJsonObject addPointCurvesIntersect(
+        const QString &draftBlockName, const QString &name, const QString &curve1, const QString &curve2,
+        const QString &vertical, const QString &horizontal) override;
+    QJsonObject addPointOnCurve(
+        const QString &draftBlockName, const QString &name, const QString &curve, const QString &length,
+        const QString &direction) override;
+    QJsonObject addSplinePath(const QString &draftBlockName, const QJsonArray &points) override;
+    // core/ribbenhost_operations.cpp
+    QJsonObject addMove(
+        const QString &draftBlockName, const QJsonArray &objects, const QString &suffix, const QString &angle,
+        const QString &length, const QString &rotation, const QString &rotationOrigin) override;
+    QJsonObject addRotation(
+        const QString &draftBlockName, const QJsonArray &objects, const QString &suffix, const QString &origin,
+        const QString &angle) override;
+    QJsonObject addMirrorByLine(
+        const QString &draftBlockName, const QJsonArray &objects, const QString &suffix, const QString &firstPoint,
+        const QString &secondPoint) override;
+    // core/ribbenhost_document.cpp
+    QJsonObject createPattern(const QString &filePath, const QString &draftBlockName, const QString &unit,
+                              const QString &closeFile) override;
+    QJsonObject saveOpenPattern(const QString &filePath) override;
 
 public slots:
     void processCommandLine();

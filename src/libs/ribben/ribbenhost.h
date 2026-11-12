@@ -65,6 +65,8 @@ public:
         NoPatternOpen   = 2,
         NotFound        = 3,
         InvalidFormula  = 4,
+        Busy            = 5,   // a dialog is open, or another request is still running: retry later
+        PatternOpen     = 6,   // create_pattern: another pattern is open, or the one to close has unsaved changes
     };
 
 private:
@@ -201,6 +203,104 @@ public:
     virtual QJsonObject addPiece(
         const QString &draftBlockName, const QString &name, const QJsonArray &outline,
         bool seamAllowance, const QString &seamAllowanceWidth) = 0;
+
+    // -- Availability --
+
+    /// Why the host cannot serve a request right now (e.g. a modal dialog is open in Seamly2D, whose nested event
+    /// loop would otherwise run the request in the middle of another operation), or an empty string.
+    /// RibbenDispatcher refuses every request except ping/get_status with RibbenError::Busy while it is non-empty.
+    virtual QString busyReason() = 0;
+
+    // -- Read-only evaluation (nothing is inserted or re-parsed) --
+
+    /// Seamly2D's own computed values for one draft block: the evaluated position of every point, each curve's
+    /// length, end angles and control points, the internal variables named in `variables` (["*"] for all of
+    /// them), and the value of each formula in `formulas`. Lengths and coordinates are in the pattern's unit,
+    /// in scene coordinates (y grows downwards); angles in degrees.
+    virtual QJsonObject evaluate(const QString &draftBlockName, const QJsonArray &variables,
+                                 const QJsonArray &formulas) = 0;
+
+    /// The value of one formula against the open pattern's current variables, or why it cannot be evaluated.
+    virtual QJsonObject checkFormula(const QString &formula) = 0;
+
+    // -- Native Seamly2D tools (each formula is evaluated before anything is inserted) --
+
+    /// The intersection of the lines p1Line1-p2Line1 and p1Line2-p2Line2 (Seamly2D's lineIntersect tool).
+    /// Refused if the lines are parallel.
+    virtual QJsonObject addPointLineIntersect(
+        const QString &draftBlockName, const QString &name, const QString &p1Line1, const QString &p2Line1,
+        const QString &p1Line2, const QString &p2Line2) = 0;
+
+    /// Where the axis from basePoint at `angle` meets a curve (Seamly2D's curveIntersectAxis tool). Refused if
+    /// they do not meet.
+    virtual QJsonObject addPointCurveIntersectAxis(
+        const QString &draftBlockName, const QString &name, const QString &basePoint, const QString &curve,
+        const QString &angle, const QString &lineType) = 0;
+
+    /// The intersection of two curves (Seamly2D's pointOfIntersectionCurves tool); `vertical` ("highest" or
+    /// "lowest") and `horizontal` ("leftmost" or "rightmost") choose among several crossings. Refused if the
+    /// curves do not cross.
+    virtual QJsonObject addPointCurvesIntersect(
+        const QString &draftBlockName, const QString &name, const QString &curve1, const QString &curve2,
+        const QString &vertical, const QString &horizontal) = 0;
+
+    /// The point at `length` along a spline, spline path or arc, from its start ("forward") or end ("backward")
+    /// (Seamly2D's cutSpline, cutSplinePath and cutArc tools). Refused outside 0..curve length, which Seamly2D
+    /// would clamp silently.
+    virtual QJsonObject addPointOnCurve(
+        const QString &draftBlockName, const QString &name, const QString &curve, const QString &length,
+        const QString &direction) = 0;
+
+    /// A spline path through existing points (Seamly2D's interactive spline path). Each entry of `points` has
+    /// "point" and the handle formulas: "angle2"/"length2" leave the point, "angle1"/"length1" arrive at it.
+    /// Seamly2D makes every point smooth, so the two angles of a point are 180 degrees apart: give one of them
+    /// (the other is derived) or both 180 degrees apart. length2 is needed except on the last point, length1
+    /// except on the first.
+    virtual QJsonObject addSplinePath(const QString &draftBlockName, const QJsonArray &points) = 0;
+
+    // -- Operations: parametric copies of points and curves (Seamly2D's Move, Rotation and Mirror by line) --
+    //
+    // `objects` names the points and curves to copy (names or ids). Each copy is named after its source with
+    // `suffix` added (A -> A<suffix>), except an arc's copy: Seamly2D names every arc Arc_<centre>_<its id>
+    // (VArc::CreateName). The suffix follows Seamly2D's own rule, so no copy can take a name the pattern already
+    // uses. The result lists every copy with the source it was made from. A mirrored arc is a "flipped" arc,
+    // whose length Seamly2D reports as negative (VArc::GetLength).
+
+    /// Moves copies by `length` at `angle`, then rotates them by `rotation` degrees about `rotationOrigin`: its
+    /// moved position if it is one of the objects, else where it stands; without an origin, about the centre of
+    /// the moved objects (Seamly2D's moving tool). A negative length is refused: give angle + 180 instead.
+    virtual QJsonObject addMove(
+        const QString &draftBlockName, const QJsonArray &objects, const QString &suffix, const QString &angle,
+        const QString &length, const QString &rotation, const QString &rotationOrigin) = 0;
+
+    /// Rotates copies by `angle` degrees (counter-clockwise on screen) about `origin`, which must not be one of
+    /// the objects (Seamly2D's rotation tool).
+    virtual QJsonObject addRotation(
+        const QString &draftBlockName, const QJsonArray &objects, const QString &suffix, const QString &origin,
+        const QString &angle) = 0;
+
+    /// Mirrors copies across the line through firstPoint and secondPoint, which must be two different positions
+    /// and not among the objects (Seamly2D's flippingByLine tool).
+    virtual QJsonObject addMirrorByLine(
+        const QString &draftBlockName, const QJsonArray &objects, const QString &suffix, const QString &firstPoint,
+        const QString &secondPoint) = 0;
+
+    // -- The pattern file (core/ribbenhost_document.cpp) --
+    //
+    // These never discard work and never replace a file: anything that would is refused, and nothing is changed.
+
+    /// Creates a new pattern, as File > New does without its dialog: `unit` (cm, mm or inch), one draft block
+    /// named draftBlockName with Seamly2D's base point, saved at once to filePath (a full path ending in .sm2d
+    /// that does not exist yet, in an existing folder). Refused with PatternOpen while a pattern is open, unless
+    /// closeFile names exactly that open file and it has no unsaved changes: it is then closed first, as
+    /// File > Close Pattern does.
+    virtual QJsonObject createPattern(const QString &filePath, const QString &draftBlockName, const QString &unit,
+                                      const QString &closeFile) = 0;
+
+    /// Saves the open pattern to its own file. filePath must name exactly that file, so a caller can never save
+    /// over a different one. Refused for a read-only pattern or one in an older file format (File > Save asks
+    /// before rewriting those).
+    virtual QJsonObject saveOpenPattern(const QString &filePath) = 0;
 };
 
 #endif // RIBBENHOST_H

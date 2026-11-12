@@ -6,7 +6,8 @@ HEADERS += \
     $$PWD/vformulaproperty.h \
     $$PWD/vformulapropertyeditor.h \
     $$PWD/vtooloptionspropertybrowser.h \
-    $$PWD/vcmdexport.h
+    $$PWD/vcmdexport.h \
+    $$PWD/ribbenhostsupport.h
 
 SOURCES += \
     $$PWD/application_2d.cpp \
@@ -14,4 +15,8 @@ SOURCES += \
     $$PWD/vformulapropertyeditor.cpp \
     $$PWD/vtooloptionspropertybrowser.cpp \
     $$PWD/vcmdexport.cpp \
-    $$PWD/ribbenmainwindowhost.cpp
+    $$PWD/ribbenmainwindowhost.cpp \
+    $$PWD/ribbenhost_evaluate.cpp \
+    $$PWD/ribbenhost_nativetools.cpp \
+    $$PWD/ribbenhost_operations.cpp \
+    $$PWD/ribbenhost_document.cpp

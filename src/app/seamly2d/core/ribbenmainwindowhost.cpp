@@ -52,180 +52,17 @@
 #include "../vpatterndb/vcontainer.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QDomElement>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QMessageBox>
 #include <QRegularExpression>
 
-namespace
-{
-    // Matches VToolBasePoint::ToolType/VToolEndLine::ToolType/VToolAlongLine::ToolType
-    // (src/libs/vtools/tools/drawTools/toolpoint/...) -- not #included here since
-    // those are heavy QGraphicsItem-derived classes pulling in most of vtools/
-    // just to reference three string literals we already know from source.
-    const QString RIBBEN_POINT_TYPE_SINGLE    = QStringLiteral("single");
-    const QString RIBBEN_POINT_TYPE_END_LINE  = QStringLiteral("endLine");
-    const QString RIBBEN_POINT_TYPE_ALONG_LINE = QStringLiteral("alongLine");
+#include "ribbenhostsupport.h"
 
-    // Matches VToolSpline::ToolType / VToolArc::ToolType
-    // (src/libs/vtools/tools/drawTools/toolcurve/...).
-    const QString RIBBEN_SPLINE_TYPE_SIMPLE_INTERACTIVE = QStringLiteral("simpleInteractive");
-    const QString RIBBEN_ARC_TYPE_SIMPLE                = QStringLiteral("simple");
-
-    // Matches VNodePoint::ToolType/VNodeArc::ToolType ("modeling") and
-    // VNodeSpline::ToolType ("modelingSpline")
-    // (src/libs/vtools/tools/nodeDetails/vnode{point,arc,spline}.cpp) -- the
-    // <modeling> section's own per-entry type attribute, distinct from the
-    // <piece><nodes><node type="..."> values below.
-    const QString RIBBEN_MODELING_TYPE_PLAIN  = QStringLiteral("modeling");
-    const QString RIBBEN_MODELING_TYPE_SPLINE = QStringLiteral("modelingSpline");
-
-    // Matches PatternPieceTool::AttrSeamAllowance/AttrVersion
-    // (src/libs/vtools/tools/pattern_piece_tool.cpp) -- defined locally here
-    // rather than pulling in that (heavy) tool class just for two attribute
-    // name strings, same reasoning as the point-type constants above.
-    const QString RIBBEN_ATTR_SEAM_ALLOWANCE = QStringLiteral("seamAllowance");
-    const QString RIBBEN_ATTR_PIECE_VERSION  = QStringLiteral("version");
-
-    QDomElement RibbenRequireDraftBlock(VPattern *doc, const QString &name)
-    {
-        QDomElement draftBlock = doc->getDraftBlockElement(name);
-        if (draftBlock.isNull())
-        {
-            throw RibbenError(RibbenError::NotFound, QObject::tr("No draft block named \"%1\".").arg(name));
-        }
-        return draftBlock;
-    }
-
-    QDomElement RibbenRequireCalculation(const QDomElement &draftBlock)
-    {
-        QDomElement calculation = draftBlock.firstChildElement(VAbstractPattern::TagCalculation);
-        if (calculation.isNull())
-        {
-            throw RibbenError(RibbenError::InternalError, QObject::tr("draft block has no <calculation> element"));
-        }
-        return calculation;
-    }
-
-    QJsonArray RibbenListElements(const QDomElement &parent, const QString &tagName)
-    {
-        QJsonArray result;
-        QDomElement element = parent.firstChildElement(tagName);
-        while (!element.isNull())
-        {
-            QJsonObject entry;
-            const QDomNamedNodeMap attrs = element.attributes();
-            for (int i = 0; i < attrs.count(); ++i)
-            {
-                const QDomAttr attr = attrs.item(i).toAttr();
-                entry.insert(attr.name(), attr.value());
-            }
-            result.append(entry);
-            element = element.nextSiblingElement(tagName);
-        }
-        return result;
-    }
-
-    QDomElement RibbenFindPointByRef(VPattern *doc, const QString &ref)
-    {
-        const QDomNodeList points = doc->elementsByTagName(VAbstractPattern::TagPoint);
-        for (int i = 0; i < points.count(); ++i)
-        {
-            const QDomElement point = points.at(i).toElement();
-            if (point.attribute(AttrName) == ref || point.attribute(VDomDocument::AttrId) == ref)
-            {
-                return point;
-            }
-        }
-        throw RibbenError(RibbenError::NotFound, QObject::tr("No point named or with id \"%1\".").arg(ref));
-    }
-
-    void RibbenValidateName(const QString &name)
-    {
-        // Roughly the schema's "shortName" rules (src/libs/ifc/schema/pattern/*.xsd):
-        // no leading digit, no whitespace/formula-operator characters. Kept in
-        // sync with the equivalent check in the sibling seamly2d-mcp project's
-        // xml_geometry.py.
-        static const QRegularExpression invalidChars(QStringLiteral(R"([\s*/&|!<>^\-+.,=?:;'"])"));
-        if (name.isEmpty())
-        {
-            throw RibbenError(RibbenError::InvalidParams, QObject::tr("name must not be empty"));
-        }
-        if (name.at(0).isDigit())
-        {
-            throw RibbenError(RibbenError::InvalidParams,
-                               QObject::tr("invalid name \"%1\": must not start with a digit").arg(name));
-        }
-        if (invalidChars.match(name).hasMatch())
-        {
-            throw RibbenError(RibbenError::InvalidParams,
-                               QObject::tr("invalid name \"%1\": must not contain whitespace or "
-                                           "formula-operator characters").arg(name));
-        }
-    }
-
-    void RibbenCheckNameFree(VPattern *doc, const QString &name)
-    {
-        const QDomNodeList points = doc->elementsByTagName(VAbstractPattern::TagPoint);
-        for (int i = 0; i < points.count(); ++i)
-        {
-            if (points.at(i).toElement().attribute(AttrName) == name)
-            {
-                throw RibbenError(RibbenError::InvalidParams,
-                                   QObject::tr("a point named \"%1\" already exists").arg(name));
-            }
-        }
-    }
-
-    QDomElement RibbenRequireModeling(const QDomElement &draftBlock)
-    {
-        QDomElement modeling = draftBlock.firstChildElement(VAbstractPattern::TagModeling);
-        if (modeling.isNull())
-        {
-            throw RibbenError(RibbenError::InternalError, QObject::tr("draft block has no <modeling> element"));
-        }
-        return modeling;
-    }
-
-    QDomElement RibbenRequirePieces(const QDomElement &draftBlock)
-    {
-        QDomElement pieces = draftBlock.firstChildElement(VAbstractPattern::TagPieces);
-        if (pieces.isNull())
-        {
-            throw RibbenError(RibbenError::InternalError, QObject::tr("draft block has no <pieces> element"));
-        }
-        return pieces;
-    }
-
-    // Unlike points, lines/splines/arcs have no "name" attribute -- only
-    // ever referenced by the id add_line/add_spline/add_arc returned.
-    QDomElement RibbenFindElementByTagAndId(VPattern *doc, const QString &tag, const QString &ref)
-    {
-        const QDomNodeList elements = doc->elementsByTagName(tag);
-        for (int i = 0; i < elements.count(); ++i)
-        {
-            const QDomElement element = elements.at(i).toElement();
-            if (element.attribute(VDomDocument::AttrId) == ref)
-            {
-                return element;
-            }
-        }
-        throw RibbenError(RibbenError::NotFound, QObject::tr("No %1 with id \"%2\".").arg(tag, ref));
-    }
-
-    /// One resolved+validated outline entry for addPiece, below -- captures
-    /// everything needed to both promote the referenced calc-layer element
-    /// into <modeling> and write the piece's <node> that points at it.
-    struct RibbenPieceNode
-    {
-        QString nodeType;       // NodePoint / NodeSpline / NodeArc
-        QString modelingType;   // this <modeling> entry's own "type" attribute
-        QString modelingTag;    // same element tag as the calc-layer source (point/spline/arc)
-        QString calcId;         // the calc-layer element's id, i.e. <modeling>'s idObject
-        bool    reverse;
-    };
-}
+using namespace RibbenSupport;
 
 //---------------------------------------------------------------------------------------------------------------------
 /// @brief initRibbenAddon adds the "Enable Ribben Addon" menu action and, if
@@ -309,10 +146,24 @@ QJsonObject MainWindow::ping()
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+/// @brief busyReason: while a modal dialog is open, its nested event loop would run a live request in the middle
+/// of whatever the dialog interrupted, so RibbenDispatcher refuses requests until it is closed.
+//---------------------------------------------------------------------------------------------------------------------
+QString MainWindow::busyReason()
+{
+    if (const QWidget *modal = QApplication::activeModalWidget())
+    {
+        return tr("Seamly2D is showing a dialog (\"%1\"); close it, then retry.").arg(modal->windowTitle());
+    }
+    return QString();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 QJsonObject MainWindow::getStatus()
 {
     QJsonObject result;
-    result.insert(QStringLiteral("file_path"), FileName());
+    result.insert(QStringLiteral("file_path"), RibbenPatternFilePath());
+    result.insert(QStringLiteral("file_name"), FileName());
     result.insert(QStringLiteral("modified"), isWindowModified());
     result.insert(QStringLiteral("unit"), UnitsToStr(qApp->patternUnit()));
     result.insert(QStringLiteral("piece_count"), static_cast<int>(pattern->DataPieces()->count()));
@@ -324,7 +175,8 @@ QJsonObject MainWindow::getStatus()
 QJsonObject MainWindow::readPattern()
 {
     QJsonObject result;
-    result.insert(QStringLiteral("file_path"), FileName());
+    result.insert(QStringLiteral("file_path"), RibbenPatternFilePath());
+    result.insert(QStringLiteral("file_name"), FileName());
     result.insert(QStringLiteral("description"), doc->GetDescription());
     result.insert(QStringLiteral("notes"), doc->GetNotes());
     result.insert(QStringLiteral("unit"), UnitsToStr(qApp->patternUnit()));
@@ -377,19 +229,59 @@ QJsonObject MainWindow::updateIncrement(const QString &name, const QString &form
         throw RibbenError(RibbenError::NotFound, tr("No increment named \"%1\".").arg(name));
     }
 
-    doc->setVariableFormula(name, formula);
+    // Checked before anything changes: a formula that does not evaluate would make the increment invalid and could
+    // break every tool that uses it.
+    RibbenEvaluateFormula(pattern, formula, QStringLiteral("formula"));
+    const QString previous = pattern->getVariable<CustomVariable>(name)->GetFormula();
 
+    const auto reparse = [this]()
+    {
+        RibbenNonInteractiveScope nonInteractive;
+        doc->LiteParseTree(Document::LiteParse);   // reports most failures by disabling the GUI, not by throwing
+    };
+    const auto restore = [this, &name, &previous, &reparse]()
+    {
+        doc->setVariableFormula(name, previous);
+        try
+        {
+            reparse();
+        }
+        catch (...)
+        {
+            // Best effort, like ribbenReparseOrRollback: the caller gets the original error.
+        }
+    };
+
+    doc->setVariableFormula(name, formula);
     try
     {
-        doc->LiteParseTree(Document::LiteParse);
+        reparse();
     }
     catch (const VException &error)
     {
+        restore();
         throw RibbenError(RibbenError::InvalidFormula, error.ErrorMessage());
     }
     catch (const qmu::QmuParserError &error)
     {
+        restore();
         throw RibbenError(RibbenError::InvalidFormula, error.GetMsg());
+    }
+
+    // Increments are evaluated before the draft blocks, so a formula naming geometry (Spl_..., Line_...) passes the
+    // check above but is invalid in the pattern; and a value can make a dependent tool fail. Either way the
+    // previous formula is restored.
+    const bool incrementValid = pattern->getVariable<CustomVariable>(name)->IsFormulaOk();
+    if (!guiEnabled || !incrementValid)
+    {
+        restore();
+        throw RibbenError(RibbenError::InvalidFormula,
+                          incrementValid
+                          ? tr("With %1 = \"%2\" the pattern no longer builds; the previous formula \"%3\" was "
+                               "restored. Seamly2D's log names the failing tool.").arg(name, formula, previous)
+                          : tr("An increment cannot use \"%1\": increments are evaluated before the geometry, so "
+                               "lengths and angles of the drawing are not available to them. The previous formula "
+                               "\"%2\" was kept.").arg(formula, previous));
     }
 
     // See listIncrements() for why this needs to be a "const CustomVariable *"
@@ -429,6 +321,9 @@ QJsonObject MainWindow::setPatternNotes(const QString &text)
 //---------------------------------------------------------------------------------------------------------------------
 void MainWindow::ribbenReparseOrRollback(QDomElement &parent, QDomElement &child)
 {
+    // Non-interactive: a formula error throws (and is rolled back below) instead of opening a dialog that would
+    // block this request; warnings are logged instead of shown.
+    RibbenNonInteractiveScope nonInteractive;
     try
     {
         toolProperties->clearPropertyBrowser();
@@ -488,6 +383,8 @@ QJsonObject MainWindow::inspectGeometry(const QString &draftBlockName)
     result.insert(QStringLiteral("lines"), RibbenListElements(calculation, VAbstractPattern::TagLine));
     result.insert(QStringLiteral("splines"), RibbenListElements(calculation, VAbstractPattern::TagSpline));
     result.insert(QStringLiteral("arcs"), RibbenListElements(calculation, VAbstractPattern::TagArc));
+    // Move, rotation and mirror operations; the objects they create have no element of their own.
+    result.insert(QStringLiteral("operations"), RibbenListOperations(pattern, calculation));
     QJsonObject modelingObjects;
     modelingObjects.insert(QStringLiteral("points"), RibbenListElements(modeling, VAbstractPattern::TagPoint));
     modelingObjects.insert(QStringLiteral("splines"), RibbenListElements(modeling, VAbstractPattern::TagSpline));
@@ -542,7 +439,9 @@ QJsonObject MainWindow::addPointEndLine(
     QDomElement calculation = RibbenRequireCalculation(draftBlock);
     RibbenValidateName(name);
     RibbenCheckNameFree(doc, name);
-    const QDomElement base = RibbenFindPointByRef(doc, basePoint);
+    const QDomElement base = RibbenFindPointByRef(doc, pattern, basePoint);
+    RibbenEvaluateFormula(pattern, length, QStringLiteral("length"));
+    RibbenEvaluateFormula(pattern, angle, QStringLiteral("angle"));
 
     const quint32 newId = VContainer::getNextId();
     QDomElement point = doc->createElement(VAbstractPattern::TagPoint);
@@ -578,8 +477,9 @@ QJsonObject MainWindow::addPointAlongLine(
     QDomElement calculation = RibbenRequireCalculation(draftBlock);
     RibbenValidateName(name);
     RibbenCheckNameFree(doc, name);
-    const QDomElement first = RibbenFindPointByRef(doc, firstPoint);
-    const QDomElement second = RibbenFindPointByRef(doc, secondPoint);
+    const QDomElement first = RibbenFindPointByRef(doc, pattern, firstPoint);
+    const QDomElement second = RibbenFindPointByRef(doc, pattern, secondPoint);
+    RibbenEvaluateFormula(pattern, length, QStringLiteral("length"));
 
     const quint32 newId = VContainer::getNextId();
     QDomElement point = doc->createElement(VAbstractPattern::TagPoint);
@@ -611,8 +511,8 @@ QJsonObject MainWindow::addLine(
 {
     QDomElement draftBlock = RibbenRequireDraftBlock(doc, draftBlockName);
     QDomElement calculation = RibbenRequireCalculation(draftBlock);
-    const QDomElement first = RibbenFindPointByRef(doc, firstPoint);
-    const QDomElement second = RibbenFindPointByRef(doc, secondPoint);
+    const QDomElement first = RibbenFindPointByRef(doc, pattern, firstPoint);
+    const QDomElement second = RibbenFindPointByRef(doc, pattern, secondPoint);
 
     const quint32 newId = VContainer::getNextId();
     QDomElement line = doc->createElement(VAbstractPattern::TagLine);
@@ -641,8 +541,21 @@ QJsonObject MainWindow::addSpline(
 {
     QDomElement draftBlock = RibbenRequireDraftBlock(doc, draftBlockName);
     QDomElement calculation = RibbenRequireCalculation(draftBlock);
-    const QDomElement first = RibbenFindPointByRef(doc, firstPoint);
-    const QDomElement second = RibbenFindPointByRef(doc, secondPoint);
+    const QDomElement first = RibbenFindPointByRef(doc, pattern, firstPoint);
+    const QDomElement second = RibbenFindPointByRef(doc, pattern, secondPoint);
+    RibbenRequire(first.attribute(VDomDocument::AttrId) != second.attribute(VDomDocument::AttrId),
+                  RibbenError::InvalidParams, tr("a spline needs two different end points"));
+    RibbenEvaluateFormula(pattern, angle1, QStringLiteral("angle1"));
+    RibbenEvaluateFormula(pattern, angle2, QStringLiteral("angle2"));
+    // Seamly2D keeps only the size of a handle length (QLineF::setAngle), so a negative one would silently draw
+    // the handle the other way round.
+    RibbenRequire(RibbenEvaluateFormula(pattern, length1, QStringLiteral("length1")) >= 0, RibbenError::InvalidParams,
+                  tr("length1 \"%1\" is negative; point the handle the other way (angle1 + 180) instead").arg(length1));
+    RibbenRequire(RibbenEvaluateFormula(pattern, length2, QStringLiteral("length2")) >= 0, RibbenError::InvalidParams,
+                  tr("length2 \"%1\" is negative; point the handle the other way (angle2 + 180) instead").arg(length2));
+    const quint32 duplicate = RibbenNextDuplicate(doc, RIBBEN_SPLINE_TYPE_SIMPLE_INTERACTIVE,
+                                                  first.attribute(VDomDocument::AttrId),
+                                                  second.attribute(VDomDocument::AttrId));
 
     const quint32 newId = VContainer::getNextId();
     QDomElement spline = doc->createElement(VAbstractPattern::TagSpline);
@@ -655,12 +568,17 @@ QJsonObject MainWindow::addSpline(
     doc->SetAttribute(spline, AttrAngle2, angle2);
     doc->SetAttribute(spline, AttrLength2, length2);
     doc->SetAttribute(spline, AttrColor, QStringLiteral("black"));
+    if (duplicate > 0)
+    {
+        doc->SetAttribute(spline, AttrDuplicate, duplicate);
+    }
     calculation.appendChild(spline);
 
     ribbenReparseOrRollback(calculation, spline);
 
     QJsonObject result;
     result.insert(QStringLiteral("id"), static_cast<int>(newId));
+    result.insert(QStringLiteral("name"), pattern->GeometricObject<VAbstractCurve>(newId)->name());
     return result;
 }
 
@@ -674,7 +592,11 @@ QJsonObject MainWindow::addArc(
 {
     QDomElement draftBlock = RibbenRequireDraftBlock(doc, draftBlockName);
     QDomElement calculation = RibbenRequireCalculation(draftBlock);
-    const QDomElement center = RibbenFindPointByRef(doc, centerPoint);
+    const QDomElement center = RibbenFindPointByRef(doc, pattern, centerPoint);
+    RibbenRequire(RibbenEvaluateFormula(pattern, radius, QStringLiteral("radius")) > 0, RibbenError::InvalidParams,
+                  tr("radius \"%1\" must be greater than 0").arg(radius));
+    RibbenEvaluateFormula(pattern, angle1, QStringLiteral("angle1"));
+    RibbenEvaluateFormula(pattern, angle2, QStringLiteral("angle2"));
 
     const quint32 newId = VContainer::getNextId();
     QDomElement arc = doc->createElement(VAbstractPattern::TagArc);
@@ -691,6 +613,7 @@ QJsonObject MainWindow::addArc(
 
     QJsonObject result;
     result.insert(QStringLiteral("id"), static_cast<int>(newId));
+    result.insert(QStringLiteral("name"), pattern->GeometricObject<VAbstractCurve>(newId)->name());
     return result;
 }
 
@@ -769,10 +692,11 @@ QJsonObject MainWindow::addPiece(
         const bool hasPoint = entry.contains(QStringLiteral("point"));
         const bool hasSpline = entry.contains(QStringLiteral("spline"));
         const bool hasArc = entry.contains(QStringLiteral("arc"));
-        if (int(hasPoint) + int(hasSpline) + int(hasArc) != 1)
+        const bool hasPath = entry.contains(QStringLiteral("spline_path"));
+        if (int(hasPoint) + int(hasSpline) + int(hasArc) + int(hasPath) != 1)
         {
             throw RibbenError(RibbenError::InvalidParams,
-                               QObject::tr("each outline entry must have exactly one of point/spline/arc"));
+                               QObject::tr("each outline entry must have exactly one of point/spline/arc/spline_path"));
         }
 
         RibbenPieceNode node;
@@ -780,7 +704,7 @@ QJsonObject MainWindow::addPiece(
 
         if (hasPoint)
         {
-            const QDomElement calcEl = RibbenFindPointByRef(doc, entry.value(QStringLiteral("point")).toString());
+            const QDomElement calcEl = RibbenFindPointByRef(doc, pattern, entry.value(QStringLiteral("point")).toString());
             node.nodeType = VAbstractPattern::NodePoint;
             node.modelingType = RIBBEN_MODELING_TYPE_PLAIN;
             node.modelingTag = VAbstractPattern::TagPoint;
@@ -788,21 +712,32 @@ QJsonObject MainWindow::addPiece(
         }
         else if (hasSpline)
         {
-            const QDomElement calcEl = RibbenFindElementByTagAndId(
-                doc, VAbstractPattern::TagSpline, entry.value(QStringLiteral("spline")).toString());
             node.nodeType = VAbstractPattern::NodeSpline;
             node.modelingType = RIBBEN_MODELING_TYPE_SPLINE;
             node.modelingTag = VAbstractPattern::TagSpline;
-            node.calcId = calcEl.attribute(VDomDocument::AttrId);
+            node.calcId = RibbenFindPieceCurveId(doc, pattern, VAbstractPattern::TagSpline,
+                                                 entry.value(QStringLiteral("spline")).toString(),
+                                                 {GOType::Spline, GOType::CubicBezier});
+        }
+        else if (hasPath)
+        {
+            const RibbenCurveRef path =
+                RibbenFindCurveByRef(doc, pattern, entry.value(QStringLiteral("spline_path")).toString());
+            RibbenRequire(path.kind == QLatin1String("splinePath"), RibbenError::InvalidParams,
+                          QObject::tr("\"%1\" is not a spline path").arg(entry.value(QStringLiteral("spline_path"))
+                                                                              .toString()));
+            node.nodeType = VAbstractPattern::NodeSplinePath;
+            node.modelingType = RIBBEN_MODELING_TYPE_PATH;
+            node.modelingTag = VAbstractPattern::TagSpline;
+            node.calcId = path.element.attribute(VDomDocument::AttrId);
         }
         else
         {
-            const QDomElement calcEl = RibbenFindElementByTagAndId(
-                doc, VAbstractPattern::TagArc, entry.value(QStringLiteral("arc")).toString());
             node.nodeType = VAbstractPattern::NodeArc;
             node.modelingType = RIBBEN_MODELING_TYPE_PLAIN;
             node.modelingTag = VAbstractPattern::TagArc;
-            node.calcId = calcEl.attribute(VDomDocument::AttrId);
+            node.calcId = RibbenFindPieceCurveId(doc, pattern, VAbstractPattern::TagArc,
+                                                 entry.value(QStringLiteral("arc")).toString(), {GOType::Arc});
         }
         resolvedNodes.append(node);
     }
@@ -847,6 +782,7 @@ QJsonObject MainWindow::addPiece(
     piece.appendChild(nodesEl);
     pieces.appendChild(piece);
 
+    RibbenNonInteractiveScope nonInteractive;   // see ribbenReparseOrRollback
     try
     {
         toolProperties->clearPropertyBrowser();

@@ -2,6 +2,11 @@
 
 #include "ribbenhost.h"
 
+#include <QStringList>
+
+#include <exception>
+#include <initializer_list>
+
 namespace
 {
     QJsonObject ErrorResponse(const QJsonValue &id, int code, const QString &message)
@@ -25,6 +30,55 @@ namespace
         response.insert(QStringLiteral("result"), result);
         return response;
     }
+
+    void RequireParams(const QString &method, const QJsonObject &params, const QStringList &names)
+    {
+        for (const QString &name : names)
+        {
+            if (!params.contains(name))
+            {
+                QStringList all;
+                for (const QString &each : names)
+                {
+                    all << QStringLiteral("\"%1\"").arg(each);
+                }
+                throw RibbenError(RibbenError::InvalidParams,
+                                  QStringLiteral("%1 needs %2.").arg(method, all.join(QStringLiteral(", "))));
+            }
+        }
+    }
+
+    QJsonArray OptionalArray(const QJsonObject &params, const QString &name)
+    {
+        const QJsonValue value = params.value(name);
+        if (value.isUndefined() || value.isNull())
+        {
+            return QJsonArray();
+        }
+        if (!value.isArray())
+        {
+            throw RibbenError(RibbenError::InvalidParams, QStringLiteral("\"%1\" must be an array.").arg(name));
+        }
+        return value.toArray();
+    }
+
+    // Requests that stay available while the host is busy: they read nothing from the pattern's geometry.
+    bool AlwaysAvailable(const QString &method)
+    {
+        return method == QLatin1String("ping") || method == QLatin1String("get_status");
+    }
+
+    // Marks a request as running for the scope's lifetime.
+    class InFlight
+    {
+    public:
+        explicit InFlight(bool &flag) : m_flag(flag) { m_flag = true; }
+        ~InFlight() { m_flag = false; }
+        InFlight(const InFlight &) = delete;
+        InFlight &operator=(const InFlight &) = delete;
+    private:
+        bool &m_flag;
+    };
 }
 
 RibbenDispatcher::RibbenDispatcher(RibbenHost *host)
@@ -44,13 +98,41 @@ QJsonObject RibbenDispatcher::dispatch(const QJsonObject &request) const
     const QJsonValue paramsValue = request.value(QStringLiteral("params"));
     const QJsonObject params = paramsValue.isObject() ? paramsValue.toObject() : QJsonObject();
 
+    // A request can arrive while another one is still running: a modal dialog's nested event loop delivers socket
+    // events too. Running it then would read or change a half-parsed pattern, so it is refused instead.
+    if (!AlwaysAvailable(method))
+    {
+        if (m_inFlight)
+        {
+            return ErrorResponse(id, RibbenError::Busy,
+                                 QStringLiteral("Seamly2D is still handling an earlier request; retry when it answers."));
+        }
+        const QString reason = m_host->busyReason();
+        if (!reason.isEmpty())
+        {
+            return ErrorResponse(id, RibbenError::Busy, reason);
+        }
+    }
+
     try
     {
+        const InFlight running(m_inFlight);
         return ResultResponse(id, invoke(method, params));
     }
     catch (const RibbenError &error)
     {
         return ErrorResponse(id, error.code(), error.message());
+    }
+    catch (const std::exception &error)
+    {
+        // Anything a host method did not translate (e.g. a pattern exception): an exception must never escape
+        // into Qt's event loop.
+        return ErrorResponse(id, RibbenError::InternalError,
+                             QStringLiteral("Unexpected error: %1").arg(QString::fromUtf8(error.what())));
+    }
+    catch (...)
+    {
+        return ErrorResponse(id, RibbenError::InternalError, QStringLiteral("Unexpected error."));
     }
 }
 
@@ -246,6 +328,148 @@ QJsonObject RibbenDispatcher::invoke(const QString &method, const QJsonObject &p
                                  outlineValue.toArray(),
                                  params.value(QStringLiteral("seam_allowance")).toBool(true),
                                  params.value(QStringLiteral("seam_allowance_width")).toString(QStringLiteral("1")));
+    }
+
+    // -- Read-only evaluation --
+
+    if (method == QLatin1String("evaluate"))
+    {
+        RequireParams(method, params, {QStringLiteral("draft_block_name")});
+        return m_host->evaluate(params.value(QStringLiteral("draft_block_name")).toString(),
+                                OptionalArray(params, QStringLiteral("variables")),
+                                OptionalArray(params, QStringLiteral("formulas")));
+    }
+
+    if (method == QLatin1String("check_formula"))
+    {
+        RequireParams(method, params, {QStringLiteral("formula")});
+        return m_host->checkFormula(params.value(QStringLiteral("formula")).toString());
+    }
+
+    // -- Native Seamly2D tools --
+
+    if (method == QLatin1String("add_point_line_intersect"))
+    {
+        RequireParams(method, params, {QStringLiteral("draft_block_name"), QStringLiteral("name"),
+                                       QStringLiteral("p1_line1"), QStringLiteral("p2_line1"),
+                                       QStringLiteral("p1_line2"), QStringLiteral("p2_line2")});
+        return m_host->addPointLineIntersect(params.value(QStringLiteral("draft_block_name")).toString(),
+                                             params.value(QStringLiteral("name")).toString(),
+                                             params.value(QStringLiteral("p1_line1")).toString(),
+                                             params.value(QStringLiteral("p2_line1")).toString(),
+                                             params.value(QStringLiteral("p1_line2")).toString(),
+                                             params.value(QStringLiteral("p2_line2")).toString());
+    }
+
+    if (method == QLatin1String("add_point_curve_intersect_axis"))
+    {
+        RequireParams(method, params, {QStringLiteral("draft_block_name"), QStringLiteral("name"),
+                                       QStringLiteral("base_point"), QStringLiteral("curve"), QStringLiteral("angle")});
+        return m_host->addPointCurveIntersectAxis(params.value(QStringLiteral("draft_block_name")).toString(),
+                                                  params.value(QStringLiteral("name")).toString(),
+                                                  params.value(QStringLiteral("base_point")).toString(),
+                                                  params.value(QStringLiteral("curve")).toString(),
+                                                  params.value(QStringLiteral("angle")).toString(),
+                                                  params.value(QStringLiteral("line_type")).toString(QStringLiteral("none")));
+    }
+
+    if (method == QLatin1String("add_point_curves_intersect"))
+    {
+        RequireParams(method, params, {QStringLiteral("draft_block_name"), QStringLiteral("name"),
+                                       QStringLiteral("curve1"), QStringLiteral("curve2")});
+        return m_host->addPointCurvesIntersect(params.value(QStringLiteral("draft_block_name")).toString(),
+                                               params.value(QStringLiteral("name")).toString(),
+                                               params.value(QStringLiteral("curve1")).toString(),
+                                               params.value(QStringLiteral("curve2")).toString(),
+                                               params.value(QStringLiteral("vertical")).toString(QStringLiteral("highest")),
+                                               params.value(QStringLiteral("horizontal")).toString(QStringLiteral("leftmost")));
+    }
+
+    if (method == QLatin1String("add_point_on_curve"))
+    {
+        RequireParams(method, params, {QStringLiteral("draft_block_name"), QStringLiteral("name"),
+                                       QStringLiteral("curve"), QStringLiteral("length")});
+        return m_host->addPointOnCurve(params.value(QStringLiteral("draft_block_name")).toString(),
+                                       params.value(QStringLiteral("name")).toString(),
+                                       params.value(QStringLiteral("curve")).toString(),
+                                       params.value(QStringLiteral("length")).toString(),
+                                       params.value(QStringLiteral("direction")).toString(QStringLiteral("forward")));
+    }
+
+    if (method == QLatin1String("add_spline_path"))
+    {
+        RequireParams(method, params, {QStringLiteral("draft_block_name"), QStringLiteral("points")});
+        const QJsonValue points = params.value(QStringLiteral("points"));
+        if (!points.isArray())
+        {
+            throw RibbenError(RibbenError::InvalidParams, QStringLiteral("\"points\" must be an array."));
+        }
+        return m_host->addSplinePath(params.value(QStringLiteral("draft_block_name")).toString(), points.toArray());
+    }
+
+    // -- Operations (move, rotation, mirror by line) --
+
+    if (method == QLatin1String("add_move") || method == QLatin1String("add_rotation") ||
+        method == QLatin1String("add_mirror_by_line"))
+    {
+        QStringList required{QStringLiteral("draft_block_name"), QStringLiteral("objects"), QStringLiteral("suffix")};
+        if (method == QLatin1String("add_move"))
+        {
+            required << QStringLiteral("angle") << QStringLiteral("length");
+        }
+        else if (method == QLatin1String("add_rotation"))
+        {
+            required << QStringLiteral("origin") << QStringLiteral("angle");
+        }
+        else
+        {
+            required << QStringLiteral("first_point") << QStringLiteral("second_point");
+        }
+        RequireParams(method, params, required);
+        const QJsonValue objects = params.value(QStringLiteral("objects"));
+        if (!objects.isArray())
+        {
+            throw RibbenError(RibbenError::InvalidParams, QStringLiteral("\"objects\" must be an array."));
+        }
+        const QString draftBlock = params.value(QStringLiteral("draft_block_name")).toString();
+        const QString suffix = params.value(QStringLiteral("suffix")).toString();
+        if (method == QLatin1String("add_move"))
+        {
+            return m_host->addMove(draftBlock, objects.toArray(), suffix,
+                                   params.value(QStringLiteral("angle")).toVariant().toString(),
+                                   params.value(QStringLiteral("length")).toVariant().toString(),
+                                   params.value(QStringLiteral("rotation")).toVariant().toString().isEmpty()
+                                       ? QStringLiteral("0")
+                                       : params.value(QStringLiteral("rotation")).toVariant().toString(),
+                                   params.value(QStringLiteral("rotation_origin")).toString());
+        }
+        if (method == QLatin1String("add_rotation"))
+        {
+            return m_host->addRotation(draftBlock, objects.toArray(), suffix,
+                                       params.value(QStringLiteral("origin")).toString(),
+                                       params.value(QStringLiteral("angle")).toVariant().toString());
+        }
+        return m_host->addMirrorByLine(draftBlock, objects.toArray(), suffix,
+                                       params.value(QStringLiteral("first_point")).toString(),
+                                       params.value(QStringLiteral("second_point")).toString());
+    }
+
+    // -- The pattern file --
+
+    if (method == QLatin1String("create_pattern"))
+    {
+        RequireParams(method, params, {QStringLiteral("file_path"), QStringLiteral("draft_block_name"),
+                                       QStringLiteral("unit")});
+        return m_host->createPattern(params.value(QStringLiteral("file_path")).toString(),
+                                     params.value(QStringLiteral("draft_block_name")).toString(),
+                                     params.value(QStringLiteral("unit")).toString(),
+                                     params.value(QStringLiteral("close_file")).toString());
+    }
+
+    if (method == QLatin1String("save_pattern"))
+    {
+        RequireParams(method, params, {QStringLiteral("file_path")});
+        return m_host->saveOpenPattern(params.value(QStringLiteral("file_path")).toString());
     }
 
     throw RibbenError(RibbenError::MethodNotFound, QStringLiteral("Unknown method \"%1\".").arg(method));
