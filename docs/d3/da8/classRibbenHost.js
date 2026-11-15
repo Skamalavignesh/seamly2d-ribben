@@ -8,12 +8,16 @@ var classRibbenHost =
     [ "addPointEndLine", "d3/da8/classRibbenHost.html#ab7cc03d042a00d728866eed0f24d8673", null ],
     [ "addPointSingle", "d3/da8/classRibbenHost.html#a3d6cc07127b7a19c84d86918d84eab14", null ],
     [ "addSpline", "d3/da8/classRibbenHost.html#abe560a7c059a298f6e5f22f51c456177", null ],
+    [ "deletePiece", "d3/da8/classRibbenHost.html#ac6414c1604e9b7441f453b003535aed5", null ],
+    [ "deletePoint", "d3/da8/classRibbenHost.html#a1683870cb8aa4b58265d7506b6c140ce", null ],
     [ "getStatus", "d3/da8/classRibbenHost.html#a5018df86f2b49b7bc3dba3fba7cbdbd6", null ],
     [ "listIncrements", "d3/da8/classRibbenHost.html#a2ecba5d2ee823609bc73faa080a1c7d7", null ],
     [ "listPieces", "d3/da8/classRibbenHost.html#a37da865fcfbc8cbaf64a522058720569", null ],
     [ "listPoints", "d3/da8/classRibbenHost.html#aa8274ecdb5539ab18ea4e41e6c0167c3", null ],
     [ "ping", "d3/da8/classRibbenHost.html#a6fed5eff6443d7eab43167c016dc784f", null ],
     [ "readPattern", "d3/da8/classRibbenHost.html#aeb229d26faae9976ed6faa8f5412eec9", null ],
+    [ "redo", "d3/da8/classRibbenHost.html#a5e5c3929c9d066e135167e6375b7af00", null ],
     [ "setPatternNotes", "d3/da8/classRibbenHost.html#a9a08c1a06314d99f792a0f4b2c01a549", null ],
+    [ "undo", "d3/da8/classRibbenHost.html#ae7caeb8234cd08de8707c6171228fcc3", null ],
     [ "updateIncrement", "d3/da8/classRibbenHost.html#a71fc593c95dc6a2aa21df1c240d8a2cd", null ]
 ];

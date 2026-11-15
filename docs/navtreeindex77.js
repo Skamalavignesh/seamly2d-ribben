@@ -1,5 +1,10 @@
 var NAVTREEINDEX77 =
 {
+"d4/d97/namespaceanonymous__namespace_02ribbensettings_8cpp_03.html#a6996fc8c8e9ab5f7cc4159bb0cb35638":[2,0,9,4],
+"d4/d97/namespaceanonymous__namespace_02ribbensettings_8cpp_03.html#a6ddbe60ab8e8011b4892b17b9c1cdfd1":[2,0,9,2],
+"d4/d97/namespaceanonymous__namespace_02ribbensettings_8cpp_03.html#a9485279a7695cd15588d252f191403c3":[2,0,9,1],
+"d4/d97/namespaceanonymous__namespace_02ribbensettings_8cpp_03.html#ac0f6e9b1080de30e0ff879513999c275":[2,0,9,0],
+"d4/d97/namespaceanonymous__namespace_02ribbensettings_8cpp_03.html#acab33bda249e51c1b581e4b8a703656c":[2,0,9,3],
 "d4/d99/msvc_2include_2xercesc_2internal_2XProtoType_8hpp.html":[4,0,0,1,16,2,0,0,2,19],
 "d4/d99/msvc_2include_2xercesc_2internal_2XProtoType_8hpp.html#a2a289b30ce95aedd2e62b2f0b523de38":[4,0,0,1,16,2,0,0,2,19,2],
 "d4/d99/msvc_2include_2xercesc_2internal_2XProtoType_8hpp.html#a3359fb369e44c501d60a2d1e07d6680d":[4,0,0,1,16,2,0,0,2,19,3],
@@ -244,10 +249,5 @@ var NAVTREEINDEX77 =
 "d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a11392118cd8b68ad9454c047ec4caf35":[4,0,0,1,9,6,40,51],
 "d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a15435e178243dc1d70abf65c3a2dbfdf":[4,0,0,1,9,6,40,34],
 "d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a16e990a5747056316876d425c584396e":[4,0,0,1,9,6,40,41],
-"d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a1cbd5fe009a53cdc3fe828886e0842f7":[4,0,0,1,9,6,40,21],
-"d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a1da44444c8ea9a2e21080d0cdeeb51b7":[4,0,0,1,9,6,40,44],
-"d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a2a78ed76450c3cb42320882b3e055b31":[4,0,0,1,9,6,40,8],
-"d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a2ce56519b7880370d6e07856dbcddb39":[4,0,0,1,9,6,40,24],
-"d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a30c4d45c1de9cd329df337ccf3e9dc2e":[4,0,0,1,9,6,40,16],
-"d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a31e0819aa01ec8effbe75dfe550dfbcb":[4,0,0,1,9,6,40,23]
+"d4/da4/def_8h.html#a474a10f771dff4181411f5ff47029582a1cbd5fe009a53cdc3fe828886e0842f7":[4,0,0,1,9,6,40,21]
 };

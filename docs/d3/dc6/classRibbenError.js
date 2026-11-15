@@ -8,7 +8,8 @@ var classRibbenError =
       [ "Unauthorized", "d3/dc6/classRibbenError.html#ad69ef647bb0b9e3eb8fd3b61f58e2060a14ee4cbbb30881cb9795f4788574f29e", null ],
       [ "NoPatternOpen", "d3/dc6/classRibbenError.html#ad69ef647bb0b9e3eb8fd3b61f58e2060ac97ba8e7c69c92acb223b0e6d6bd090f", null ],
       [ "NotFound", "d3/dc6/classRibbenError.html#ad69ef647bb0b9e3eb8fd3b61f58e2060a71d0448eaff357dbb26a386a07d4a78e", null ],
-      [ "InvalidFormula", "d3/dc6/classRibbenError.html#ad69ef647bb0b9e3eb8fd3b61f58e2060a2c6be08f35c69c5a18a564d979d705a3", null ]
+      [ "InvalidFormula", "d3/dc6/classRibbenError.html#ad69ef647bb0b9e3eb8fd3b61f58e2060a2c6be08f35c69c5a18a564d979d705a3", null ],
+      [ "InUse", "d3/dc6/classRibbenError.html#ad69ef647bb0b9e3eb8fd3b61f58e2060a583d341149620e332a6685afb805b1ad", null ]
     ] ],
     [ "RibbenError", "d3/dc6/classRibbenError.html#a4b80d162225e59072e6ba57fde91ac0e", null ],
     [ "code", "d3/dc6/classRibbenError.html#ad218b1fc535055dfc613135d666015ec", null ],

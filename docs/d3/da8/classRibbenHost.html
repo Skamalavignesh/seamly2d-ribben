@@ -171,12 +171,24 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3def52b7da4ab841ae72659da779f23f"><td class="memItemLeft" align="right" valign="top">virtual QJsonObject&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d3/da8/classRibbenHost.html#a3def52b7da4ab841ae72659da779f23f">addPiece</a> (const QString &amp;draftBlockName, const QString &amp;name, const QJsonArray &amp;outline, bool seamAllowance, const QString &amp;seamAllowanceWidth)=0</td></tr>
 <tr class="memdesc:a3def52b7da4ab841ae72659da779f23f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a piece (seam-allowance outline) from existing points/ curves. <code>outline</code> is an ordered array of objects, each with exactly one of "point"/"spline"/"arc" (a reference: point name/id, or a spline/arc id) plus an optional "reverse" bool (ignored for point nodes). Must have at least 2 entries. Each referenced point/spline/ arc is automatically promoted into the draft block's &lt;modeling&gt; section first &ndash; Seamly2D's own internal representation, mirrored here &ndash; so the caller never has to think about that layer. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(InvalidParams)</a> for fewer than 2 nodes or an ambiguous/missing point-spline-arc key in an entry.  <br /></td></tr>
 <tr class="separator:a3def52b7da4ab841ae72659da779f23f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1683870cb8aa4b58265d7506b6c140ce"><td class="memItemLeft" align="right" valign="top">virtual QJsonObject&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d3/da8/classRibbenHost.html#a1683870cb8aa4b58265d7506b6c140ce">deletePoint</a> (const QString &amp;draftBlockName, const QString &amp;point)=0</td></tr>
+<tr class="memdesc:a1683870cb8aa4b58265d7506b6c140ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes one point from a draft block. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> for an unknown draft block or point, <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(InUse)</a> if anything still references it.  <br /></td></tr>
+<tr class="separator:a1683870cb8aa4b58265d7506b6c140ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6414c1604e9b7441f453b003535aed5"><td class="memItemLeft" align="right" valign="top">virtual QJsonObject&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d3/da8/classRibbenHost.html#ac6414c1604e9b7441f453b003535aed5">deletePiece</a> (const QString &amp;draftBlockName, const QString &amp;piece)=0</td></tr>
+<tr class="memdesc:ac6414c1604e9b7441f453b003535aed5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes one piece from a draft block. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> for an unknown draft block or piece.  <br /></td></tr>
+<tr class="separator:ac6414c1604e9b7441f453b003535aed5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae7caeb8234cd08de8707c6171228fcc3"><td class="memItemLeft" align="right" valign="top">virtual QJsonObject&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d3/da8/classRibbenHost.html#ae7caeb8234cd08de8707c6171228fcc3">undo</a> ()=0</td></tr>
+<tr class="memdesc:ae7caeb8234cd08de8707c6171228fcc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restores the document to its state before the most recently tracked live edit. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> if there's nothing to undo.  <br /></td></tr>
+<tr class="separator:ae7caeb8234cd08de8707c6171228fcc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e5c3929c9d066e135167e6375b7af00"><td class="memItemLeft" align="right" valign="top">virtual QJsonObject&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="../../d3/da8/classRibbenHost.html#a5e5c3929c9d066e135167e6375b7af00">redo</a> ()=0</td></tr>
+<tr class="memdesc:a5e5c3929c9d066e135167e6375b7af00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reapplies the most recently undone live edit. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> if there's nothing to redo.  <br /></td></tr>
+<tr class="separator:a5e5c3929c9d066e135167e6375b7af00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><a class="el" href="../../d3/da8/classRibbenHost.html" title="RibbenHost is what a live JSON-RPC request is actually dispatched against: a running Seamly2D window ...">RibbenHost</a> is what a live JSON-RPC request is actually dispatched against: a running Seamly2D window with a pattern open. Every method mirrors a tool already exposed by the file-based "seamly2d MCP" server, but operates on the live, in-memory document instead of a file on disk, so edits are reflected immediately in the open window (and the file-based server's read tools keep working once the user saves). </p>
 <p>Implementations run on the GUI thread (<a class="el" href="../../d1/d9c/classRibbenServer.html">RibbenServer</a> never hands work to a worker thread), so it's safe for a method to touch Qt widgets/doc classes directly, the same way a menu action's slot would. </p>
 
-<p class="definition">Definition at line <a class="el" href="../../d3/df8/ribbenhost_8h_source.html#l00087">87</a> of file <a class="el" href="../../d3/df8/ribbenhost_8h_source.html">ribbenhost.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="../../d3/df8/ribbenhost_8h_source.html#l00088">88</a> of file <a class="el" href="../../d3/df8/ribbenhost_8h_source.html">ribbenhost.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2f9d4021f529a838c50b113d99c388b4" name="a2f9d4021f529a838c50b113d99c388b4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2f9d4021f529a838c50b113d99c388b4">&#9670;&#160;</a></span>~RibbenHost()</h2>
@@ -630,6 +642,90 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ac6414c1604e9b7441f453b003535aed5" name="ac6414c1604e9b7441f453b003535aed5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6414c1604e9b7441f453b003535aed5">&#9670;&#160;</a></span>deletePiece()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual QJsonObject RibbenHost::deletePiece </td>
+          <td>(</td>
+          <td class="paramtype">const QString &amp;&#160;</td>
+          <td class="paramname"><em>draftBlockName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const QString &amp;&#160;</td>
+          <td class="paramname"><em>piece</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Deletes one piece from a draft block. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> for an unknown draft block or piece. </p>
+
+<p>Implemented in <a class="el" href="../../d6/d1a/classMainWindow.html#af7c6d5de3c0d664e5eca040268f9d0b6">MainWindow</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="../../d3/d30/ribbendispatcher_8cpp_source.html#l00057">RibbenDispatcher::invoke()</a>.</p>
+
+</div>
+</div>
+<a id="a1683870cb8aa4b58265d7506b6c140ce" name="a1683870cb8aa4b58265d7506b6c140ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1683870cb8aa4b58265d7506b6c140ce">&#9670;&#160;</a></span>deletePoint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual QJsonObject RibbenHost::deletePoint </td>
+          <td>(</td>
+          <td class="paramtype">const QString &amp;&#160;</td>
+          <td class="paramname"><em>draftBlockName</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const QString &amp;&#160;</td>
+          <td class="paramname"><em>point</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Deletes one point from a draft block. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> for an unknown draft block or point, <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(InUse)</a> if anything still references it. </p>
+
+<p>Implemented in <a class="el" href="../../d6/d1a/classMainWindow.html#ac2fbfd452d5c0db5b07bc2a3b45a4757">MainWindow</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="../../d3/d30/ribbendispatcher_8cpp_source.html#l00057">RibbenDispatcher::invoke()</a>.</p>
+
+</div>
+</div>
 <a id="a5018df86f2b49b7bc3dba3fba7cbdbd6" name="a5018df86f2b49b7bc3dba3fba7cbdbd6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5018df86f2b49b7bc3dba3fba7cbdbd6">&#9670;&#160;</a></span>getStatus()</h2>
 
@@ -818,6 +914,37 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a5e5c3929c9d066e135167e6375b7af00" name="a5e5c3929c9d066e135167e6375b7af00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e5c3929c9d066e135167e6375b7af00">&#9670;&#160;</a></span>redo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual QJsonObject RibbenHost::redo </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reapplies the most recently undone live edit. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> if there's nothing to redo. </p>
+
+<p>Implemented in <a class="el" href="../../d6/d1a/classMainWindow.html#af8aa04f626fb25f0bfc4096f8a34aae1">MainWindow</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="../../d3/d30/ribbendispatcher_8cpp_source.html#l00057">RibbenDispatcher::invoke()</a>.</p>
+
+</div>
+</div>
 <a id="a9a08c1a06314d99f792a0f4b2c01a549" name="a9a08c1a06314d99f792a0f4b2c01a549"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9a08c1a06314d99f792a0f4b2c01a549">&#9670;&#160;</a></span>setPatternNotes()</h2>
 
@@ -845,6 +972,37 @@ Public Member Functions</h2></td></tr>
 <p>Replaces the pattern's free-text notes. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NoPatternOpen)</a> if nothing is open. </p>
 
 <p>Implemented in <a class="el" href="../../d6/d1a/classMainWindow.html#aee1d1168b6fbd9e9271bc213a45cbd43">MainWindow</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="../../d3/d30/ribbendispatcher_8cpp_source.html#l00057">RibbenDispatcher::invoke()</a>.</p>
+
+</div>
+</div>
+<a id="ae7caeb8234cd08de8707c6171228fcc3" name="ae7caeb8234cd08de8707c6171228fcc3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7caeb8234cd08de8707c6171228fcc3">&#9670;&#160;</a></span>undo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual QJsonObject RibbenHost::undo </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Restores the document to its state before the most recently tracked live edit. Throws <a class="el" href="../../d3/dc6/classRibbenError.html" title="Error thrown by a RibbenHost method to report a failed request (e.g. &quot;no pattern is open&quot;,...">RibbenError(NotFound)</a> if there's nothing to undo. </p>
+
+<p>Implemented in <a class="el" href="../../d6/d1a/classMainWindow.html#a1fb3d92b30d184d002c6114515a87fdf">MainWindow</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="../../d3/d30/ribbendispatcher_8cpp_source.html#l00057">RibbenDispatcher::invoke()</a>.</p>
 
