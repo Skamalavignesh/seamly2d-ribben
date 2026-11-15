@@ -65,6 +65,7 @@ public:
         NoPatternOpen   = 2,
         NotFound        = 3,
         InvalidFormula  = 4,
+        InUse           = 5,
     };
 
 private:
@@ -197,6 +198,45 @@ public:
     virtual QJsonObject addPiece(
         const QString &draftBlockName, const QString &name, const QJsonArray &outline,
         bool seamAllowance, const QString &seamAllowanceWidth) = 0;
+
+    // -- Deleting geometry --
+    //
+    // Mirrors the sibling seamly2d-mcp project's file-based delete_point/
+    // delete_piece tools exactly, including the dependency guard: deleting a
+    // point still referenced by another point, a line/spline/arc, or a piece
+    // throws RibbenError(InUse) listing what depends on it, rather than
+    // leaving a dangling reference. Deleting a piece also removes the
+    // <modeling> wrapper elements it privately owns (each piece's wrappers
+    // are its own -- see addPiece above -- so this can't affect another
+    // piece or the underlying points/curves).
+
+    /// Deletes one point from a draft block. Throws RibbenError(NotFound)
+    /// for an unknown draft block or point, RibbenError(InUse) if anything
+    /// still references it.
+    virtual QJsonObject deletePoint(const QString &draftBlockName, const QString &point) = 0;
+
+    /// Deletes one piece from a draft block. Throws RibbenError(NotFound)
+    /// for an unknown draft block or piece.
+    virtual QJsonObject deletePiece(const QString &draftBlockName, const QString &piece) = 0;
+
+    // -- Undo/redo --
+    //
+    // Every mutating method above edits the live QDomDocument directly and
+    // reparses (MainWindow::ribbenReparseOrRollback) instead of going
+    // through Seamly2D's own QUndoStack/QUndoCommand machinery -- so this is
+    // a separate, addon-local history, NOT the same stack the native
+    // Undo/Redo toolbar buttons drive: undoing a Ribben-driven edit here
+    // will not appear as a step in Seamly2D's own History panel, and vice
+    // versa. A whole-document snapshot is taken before every mutating
+    // method above; undo/redo restore a previous snapshot and reparse.
+
+    /// Restores the document to its state before the most recently tracked
+    /// live edit. Throws RibbenError(NotFound) if there's nothing to undo.
+    virtual QJsonObject undo() = 0;
+
+    /// Reapplies the most recently undone live edit. Throws
+    /// RibbenError(NotFound) if there's nothing to redo.
+    virtual QJsonObject redo() = 0;
 };
 
 #endif // RIBBENHOST_H

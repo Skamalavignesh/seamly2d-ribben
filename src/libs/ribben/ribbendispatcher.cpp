@@ -238,5 +238,37 @@ QJsonObject RibbenDispatcher::invoke(const QString &method, const QJsonObject &p
                                  params.value(QStringLiteral("seam_allowance_width")).toString(QStringLiteral("1")));
     }
 
+    if (method == QLatin1String("delete_point"))
+    {
+        if (!params.contains(QStringLiteral("draft_block_name")) || !params.contains(QStringLiteral("point")))
+        {
+            throw RibbenError(RibbenError::InvalidParams,
+                               QStringLiteral("delete_point needs \"draft_block_name\", \"point\"."));
+        }
+        return m_host->deletePoint(params.value(QStringLiteral("draft_block_name")).toString(),
+                                    params.value(QStringLiteral("point")).toString());
+    }
+
+    if (method == QLatin1String("delete_piece"))
+    {
+        if (!params.contains(QStringLiteral("draft_block_name")) || !params.contains(QStringLiteral("piece")))
+        {
+            throw RibbenError(RibbenError::InvalidParams,
+                               QStringLiteral("delete_piece needs \"draft_block_name\", \"piece\"."));
+        }
+        return m_host->deletePiece(params.value(QStringLiteral("draft_block_name")).toString(),
+                                    params.value(QStringLiteral("piece")).toString());
+    }
+
+    if (method == QLatin1String("undo"))
+    {
+        return m_host->undo();
+    }
+
+    if (method == QLatin1String("redo"))
+    {
+        return m_host->redo();
+    }
+
     throw RibbenError(RibbenError::MethodNotFound, QStringLiteral("Unknown method \"%1\".").arg(method));
 }

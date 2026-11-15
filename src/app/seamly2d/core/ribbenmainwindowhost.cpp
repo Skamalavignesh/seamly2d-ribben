@@ -88,6 +88,10 @@ namespace
     const QString RIBBEN_ATTR_SEAM_ALLOWANCE = QStringLiteral("seamAllowance");
     const QString RIBBEN_ATTR_PIECE_VERSION  = QStringLiteral("version");
 
+    // Undo/redo history depth -- matches MAX_HISTORY in the sibling
+    // seamly2d-mcp project's operations/history.py.
+    constexpr int RIBBEN_MAX_UNDO_HISTORY = 50;
+
     QDomElement RibbenRequireDraftBlock(VPattern *doc, const QString &name)
     {
         QDomElement draftBlock = doc->getDraftBlockElement(name);
@@ -206,6 +210,84 @@ namespace
         QString calcId;         // the calc-layer element's id, i.e. <modeling>'s idObject
         bool    reverse;
     };
+
+    /// Finds everything in the whole document (not just one draft block --
+    /// matches the file-based delete_point tool's scope) that references
+    /// pointId, for deletePoint's dependency guard. Returns human-readable
+    /// descriptions, not elements -- only ever used to build an error
+    /// message. Mirrors xml_geometry.py's _find_point_dependents exactly.
+    QStringList RibbenFindPointDependents(VPattern *doc, const QString &pointId)
+    {
+        QStringList dependents;
+
+        auto checkAttrs = [&](const QString &tag, const QStringList &attrs)
+        {
+            const QDomNodeList elements = doc->elementsByTagName(tag);
+            for (int i = 0; i < elements.count(); ++i)
+            {
+                const QDomElement element = elements.at(i).toElement();
+                for (const QString &attr : attrs)
+                {
+                    if (element.attribute(attr) == pointId)
+                    {
+                        const QString label = element.hasAttribute(AttrName)
+                            ? element.attribute(AttrName)
+                            : QStringLiteral("id %1").arg(element.attribute(VDomDocument::AttrId));
+                        dependents.append(QStringLiteral("%1 %2").arg(tag, label));
+                        break;
+                    }
+                }
+            }
+        };
+
+        checkAttrs(VAbstractPattern::TagPoint, {AttrBasePoint, AttrFirstPoint, AttrSecondPoint});
+        checkAttrs(VAbstractPattern::TagLine, {AttrFirstPoint, AttrSecondPoint});
+        checkAttrs(VAbstractPattern::TagSpline, {AttrPoint1, AttrPoint4});
+        checkAttrs(VAbstractPattern::TagArc, {AttrCenter});
+
+        // Direct use by a piece, via a <modeling><point idObject="..."> wrapper
+        // -- indirect use through a spline/arc is already caught above, since
+        // that spline/arc element itself would show up as a dependent.
+        const QDomNodeList draftBlocks = doc->elementsByTagName(VAbstractPattern::TagDraftBlock);
+        for (int i = 0; i < draftBlocks.count(); ++i)
+        {
+            const QDomElement draftBlock = draftBlocks.at(i).toElement();
+            const QDomElement modeling = draftBlock.firstChildElement(VAbstractPattern::TagModeling);
+            const QDomElement pieces = draftBlock.firstChildElement(VAbstractPattern::TagPieces);
+            if (modeling.isNull() || pieces.isNull())
+            {
+                continue;
+            }
+
+            QDomElement modelingEl = modeling.firstChildElement(VAbstractPattern::TagPoint);
+            while (!modelingEl.isNull())
+            {
+                if (modelingEl.attribute(AttrIdObject) == pointId)
+                {
+                    const QString modelingId = modelingEl.attribute(VDomDocument::AttrId);
+                    QDomElement piece = pieces.firstChildElement(VAbstractPattern::TagPiece);
+                    while (!piece.isNull())
+                    {
+                        const QDomElement nodesEl = piece.firstChildElement(VAbstractPattern::TagNodes);
+                        QDomElement nodeEl = nodesEl.firstChildElement(VAbstractPattern::TagNode);
+                        while (!nodeEl.isNull())
+                        {
+                            if (nodeEl.attribute(AttrIdObject) == modelingId)
+                            {
+                                dependents.append(QStringLiteral("piece '%1'").arg(piece.attribute(AttrName)));
+                                break;
+                            }
+                            nodeEl = nodeEl.nextSiblingElement(VAbstractPattern::TagNode);
+                        }
+                        piece = piece.nextSiblingElement(VAbstractPattern::TagPiece);
+                    }
+                }
+                modelingEl = modelingEl.nextSiblingElement(VAbstractPattern::TagPoint);
+            }
+        }
+
+        return dependents;
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -357,6 +439,7 @@ QJsonObject MainWindow::updateIncrement(const QString &name, const QString &form
         throw RibbenError(RibbenError::NotFound, tr("No increment named \"%1\".").arg(name));
     }
 
+    ribbenPushUndoSnapshot();
     doc->setVariableFormula(name, formula);
 
     try
@@ -387,6 +470,7 @@ QJsonObject MainWindow::updateIncrement(const QString &name, const QString &form
 //---------------------------------------------------------------------------------------------------------------------
 QJsonObject MainWindow::setPatternNotes(const QString &text)
 {
+    ribbenPushUndoSnapshot();
     doc->SetNotes(text);
 
     QJsonObject result;
@@ -405,7 +489,10 @@ QJsonObject MainWindow::setPatternNotes(const QString &text)
 /// live_add_point_* call invisible to the caller and the GUI silently
 /// disabled. On failure here, the just-inserted element is removed and the
 /// document re-parsed again to restore the prior good state before the
-/// error is reported.
+/// error is reported. The undo-history snapshot the caller pushed just
+/// before inserting `child` is popped back off too, in that case -- the
+/// edit never actually took effect, so it shouldn't linger as an undoable
+/// step (see ribbenPushUndoSnapshot).
 //---------------------------------------------------------------------------------------------------------------------
 void MainWindow::ribbenReparseOrRollback(QDomElement &parent, QDomElement &child)
 {
@@ -418,6 +505,10 @@ void MainWindow::ribbenReparseOrRollback(QDomElement &parent, QDomElement &child
     catch (const VException &error)
     {
         parent.removeChild(child);
+        if (!m_ribbenUndoStack.isEmpty())
+        {
+            m_ribbenUndoStack.removeLast();
+        }
         try
         {
             doc->Parse(Document::FullParse);
@@ -467,6 +558,8 @@ QJsonObject MainWindow::addPointSingle(const QString &draftBlockName, const QStr
     RibbenValidateName(name);
     RibbenCheckNameFree(doc, name);
 
+    ribbenPushUndoSnapshot();
+
     const quint32 newId = VContainer::getNextId();
     QDomElement point = doc->createElement(VAbstractPattern::TagPoint);
     doc->SetAttribute(point, VDomDocument::AttrId, newId);
@@ -501,6 +594,8 @@ QJsonObject MainWindow::addPointEndLine(
     RibbenValidateName(name);
     RibbenCheckNameFree(doc, name);
     const QDomElement base = RibbenFindPointByRef(doc, basePoint);
+
+    ribbenPushUndoSnapshot();
 
     const quint32 newId = VContainer::getNextId();
     QDomElement point = doc->createElement(VAbstractPattern::TagPoint);
@@ -539,6 +634,8 @@ QJsonObject MainWindow::addPointAlongLine(
     const QDomElement first = RibbenFindPointByRef(doc, firstPoint);
     const QDomElement second = RibbenFindPointByRef(doc, secondPoint);
 
+    ribbenPushUndoSnapshot();
+
     const quint32 newId = VContainer::getNextId();
     QDomElement point = doc->createElement(VAbstractPattern::TagPoint);
     doc->SetAttribute(point, VDomDocument::AttrId, newId);
@@ -572,6 +669,8 @@ QJsonObject MainWindow::addLine(
     const QDomElement first = RibbenFindPointByRef(doc, firstPoint);
     const QDomElement second = RibbenFindPointByRef(doc, secondPoint);
 
+    ribbenPushUndoSnapshot();
+
     const quint32 newId = VContainer::getNextId();
     QDomElement line = doc->createElement(VAbstractPattern::TagLine);
     doc->SetAttribute(line, VDomDocument::AttrId, newId);
@@ -601,6 +700,8 @@ QJsonObject MainWindow::addSpline(
     QDomElement calculation = RibbenRequireCalculation(draftBlock);
     const QDomElement first = RibbenFindPointByRef(doc, firstPoint);
     const QDomElement second = RibbenFindPointByRef(doc, secondPoint);
+
+    ribbenPushUndoSnapshot();
 
     const quint32 newId = VContainer::getNextId();
     QDomElement spline = doc->createElement(VAbstractPattern::TagSpline);
@@ -633,6 +734,8 @@ QJsonObject MainWindow::addArc(
     QDomElement draftBlock = RibbenRequireDraftBlock(doc, draftBlockName);
     QDomElement calculation = RibbenRequireCalculation(draftBlock);
     const QDomElement center = RibbenFindPointByRef(doc, centerPoint);
+
+    ribbenPushUndoSnapshot();
 
     const quint32 newId = VContainer::getNextId();
     QDomElement arc = doc->createElement(VAbstractPattern::TagArc);
@@ -768,6 +871,8 @@ QJsonObject MainWindow::addPiece(
     // Every reference validated -- now mutate. Track every inserted element
     // (modeling wrappers + the piece) so a failed reparse can roll all of
     // them back together.
+    ribbenPushUndoSnapshot();
+
     QDomElement nodesEl = doc->createElement(VAbstractPattern::TagNodes);
     QList<QDomElement> insertedModelingElements;
 
@@ -818,6 +923,10 @@ QJsonObject MainWindow::addPiece(
         {
             modeling.removeChild(modelingEl);
         }
+        if (!m_ribbenUndoStack.isEmpty())
+        {
+            m_ribbenUndoStack.removeLast();
+        }
         try
         {
             doc->Parse(Document::FullParse);
@@ -831,5 +940,214 @@ QJsonObject MainWindow::addPiece(
 
     QJsonObject result;
     result.insert(QStringLiteral("id"), static_cast<int>(pieceId));
+    return result;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+/// @brief ribbenPushUndoSnapshot records the document's current XML as an
+/// undo step, before a caller is about to mutate it -- the addon-local
+/// equivalent of the sibling seamly2d-mcp project's history.push()
+/// (operations/history.py), since every Ribben-driven edit mutates the DOM
+/// directly and never pushes a QUndoCommand onto Seamly2D's own QUndoStack
+/// (see ribbenhost.h's "Undo/redo" section). Clears the redo stack -- a
+/// fresh edit invalidates whatever had been undone -- and caps the undo
+/// stack at RIBBEN_MAX_UNDO_HISTORY entries, dropping the oldest once
+/// exceeded.
+//---------------------------------------------------------------------------------------------------------------------
+void MainWindow::ribbenPushUndoSnapshot()
+{
+    m_ribbenUndoStack.append(doc->toString());
+    while (m_ribbenUndoStack.size() > RIBBEN_MAX_UNDO_HISTORY)
+    {
+        m_ribbenUndoStack.removeFirst();
+    }
+    m_ribbenRedoStack.clear();
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+/// @brief ribbenReparseOrRestoreFromUndo is deletePoint/deletePiece's
+/// rollback path: unlike ribbenReparseOrRollback (built for undoing a
+/// single-element insertion), a failed reparse here is recovered by
+/// restoring the snapshot ribbenPushUndoSnapshot just took -- which is also
+/// popped back off the undo stack, since the edit never actually took
+/// effect and shouldn't linger as an undoable step.
+//---------------------------------------------------------------------------------------------------------------------
+void MainWindow::ribbenReparseOrRestoreFromUndo()
+{
+    try
+    {
+        toolProperties->clearPropertyBrowser();
+        setGuiEnabled(true);
+        doc->Parse(Document::FullParse);
+    }
+    catch (const VException &error)
+    {
+        if (!m_ribbenUndoStack.isEmpty())
+        {
+            const QString snapshot = m_ribbenUndoStack.takeLast();
+            doc->setContent(snapshot);
+            try
+            {
+                doc->Parse(Document::FullParse);
+            }
+            catch (const VException &)
+            {
+                // Best-effort restore, same as ribbenReparseOrRollback.
+            }
+        }
+        throw RibbenError(RibbenError::InvalidFormula, error.ErrorMessage());
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+/// @brief ribbenRestoreSnapshot implements both undo() and redo(): pops the
+/// most recent entry off fromStack, pushes the document's current XML onto
+/// toStack (so the opposite call can reverse this one), then replaces the
+/// live document's content with the popped snapshot and reparses -- the
+/// same doc->Parse(Document::FullParse) call every other live edit in this
+/// file makes, so the change appears on screen immediately.
+//---------------------------------------------------------------------------------------------------------------------
+QJsonObject MainWindow::ribbenRestoreSnapshot(QStringList &fromStack, QStringList &toStack)
+{
+    if (fromStack.isEmpty())
+    {
+        throw RibbenError(RibbenError::NotFound, tr("no history to undo/redo"));
+    }
+
+    const QString snapshot = fromStack.takeLast();
+    toStack.append(doc->toString());
+
+    QString errorMessage;
+    if (!doc->setContent(snapshot, &errorMessage))
+    {
+        throw RibbenError(RibbenError::InternalError,
+                           tr("could not restore document snapshot: %1").arg(errorMessage));
+    }
+
+    try
+    {
+        toolProperties->clearPropertyBrowser();
+        setGuiEnabled(true);
+        doc->Parse(Document::FullParse);
+    }
+    catch (const VException &error)
+    {
+        throw RibbenError(RibbenError::InvalidFormula, error.ErrorMessage());
+    }
+
+    QJsonObject result;
+    result.insert(QStringLiteral("undo_available"), m_ribbenUndoStack.size());
+    result.insert(QStringLiteral("redo_available"), m_ribbenRedoStack.size());
+    return result;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+QJsonObject MainWindow::undo()
+{
+    return ribbenRestoreSnapshot(m_ribbenUndoStack, m_ribbenRedoStack);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+QJsonObject MainWindow::redo()
+{
+    return ribbenRestoreSnapshot(m_ribbenRedoStack, m_ribbenUndoStack);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+/// @brief deletePoint removes a point from a draft block, live -- mirrors
+/// the file-based delete_point tool's dependency guard exactly (see
+/// xml_geometry.py): refuses if any other point, line, spline, arc, or
+/// piece still references it, listing every dependent so the caller knows
+/// what to remove first.
+//---------------------------------------------------------------------------------------------------------------------
+QJsonObject MainWindow::deletePoint(const QString &draftBlockName, const QString &point)
+{
+    QDomElement draftBlock = RibbenRequireDraftBlock(doc, draftBlockName);
+    QDomElement calculation = RibbenRequireCalculation(draftBlock);
+    QDomElement target = RibbenFindPointByRef(doc, point);
+    const QString pointId = target.attribute(VDomDocument::AttrId);
+
+    if (target.parentNode() != calculation)
+    {
+        throw RibbenError(RibbenError::NotFound,
+                           tr("point \"%1\" is not in draft block \"%2\"").arg(point, draftBlockName));
+    }
+
+    const QStringList dependents = RibbenFindPointDependents(doc, pointId);
+    if (!dependents.isEmpty())
+    {
+        throw RibbenError(RibbenError::InUse,
+                           tr("point \"%1\" is still used by: %2 -- remove those first")
+                               .arg(point, dependents.join(QStringLiteral(", "))));
+    }
+
+    ribbenPushUndoSnapshot();
+    calculation.removeChild(target);
+    ribbenReparseOrRestoreFromUndo();
+
+    QJsonObject result;
+    result.insert(QStringLiteral("deleted"), point);
+    return result;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+/// @brief deletePiece removes a piece and the <modeling> wrapper elements it
+/// privately owns, live -- mirrors the file-based delete_piece tool: each
+/// piece's wrappers are its own (see addPiece), so this can't affect
+/// another piece or the underlying points/curves it was built from.
+//---------------------------------------------------------------------------------------------------------------------
+QJsonObject MainWindow::deletePiece(const QString &draftBlockName, const QString &piece)
+{
+    QDomElement draftBlock = RibbenRequireDraftBlock(doc, draftBlockName);
+    QDomElement modeling = RibbenRequireModeling(draftBlock);
+    QDomElement pieces = RibbenRequirePieces(draftBlock);
+
+    QDomElement target;
+    QDomElement candidate = pieces.firstChildElement(VAbstractPattern::TagPiece);
+    while (!candidate.isNull())
+    {
+        if (candidate.attribute(AttrName) == piece || candidate.attribute(VDomDocument::AttrId) == piece)
+        {
+            target = candidate;
+            break;
+        }
+        candidate = candidate.nextSiblingElement(VAbstractPattern::TagPiece);
+    }
+    if (target.isNull())
+    {
+        throw RibbenError(RibbenError::NotFound, tr("No piece named or with id \"%1\".").arg(piece));
+    }
+
+    QStringList modelingIds;
+    const QDomElement nodesEl = target.firstChildElement(VAbstractPattern::TagNodes);
+    QDomElement nodeEl = nodesEl.firstChildElement(VAbstractPattern::TagNode);
+    while (!nodeEl.isNull())
+    {
+        modelingIds.append(nodeEl.attribute(AttrIdObject));
+        nodeEl = nodeEl.nextSiblingElement(VAbstractPattern::TagNode);
+    }
+
+    ribbenPushUndoSnapshot();
+
+    QList<QDomElement> modelingElsToRemove;
+    QDomElement modelingChild = modeling.firstChildElement();
+    while (!modelingChild.isNull())
+    {
+        if (modelingIds.contains(modelingChild.attribute(VDomDocument::AttrId)))
+        {
+            modelingElsToRemove.append(modelingChild);
+        }
+        modelingChild = modelingChild.nextSiblingElement();
+    }
+    for (QDomElement &modelingEl : modelingElsToRemove)
+    {
+        modeling.removeChild(modelingEl);
+    }
+    pieces.removeChild(target);
+
+    ribbenReparseOrRestoreFromUndo();
+
+    QJsonObject result;
+    result.insert(QStringLiteral("deleted"), piece);
     return result;
 }

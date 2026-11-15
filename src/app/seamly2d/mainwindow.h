@@ -139,6 +139,10 @@ public:
     QJsonObject addPiece(
         const QString &draftBlockName, const QString &name, const QJsonArray &outline,
         bool seamAllowance, const QString &seamAllowanceWidth) override;
+    QJsonObject deletePoint(const QString &draftBlockName, const QString &point) override;
+    QJsonObject deletePiece(const QString &draftBlockName, const QString &piece) override;
+    QJsonObject undo() override;
+    QJsonObject redo() override;
 
 public slots:
     void processCommandLine();
@@ -374,9 +378,14 @@ private:
 
     RibbenServer                     *m_ribbenServer;  /// @brief m_ribbenServer embedded live MCP/RPC server (Ribben addon), null until first enabled.
     QAction                          *m_ribbenAction;   /// @brief m_ribbenAction "Enable Ribben Addon" checkable menu action.
+    QStringList                       m_ribbenUndoStack; /// @brief m_ribbenUndoStack whole-document XML snapshots taken before each Ribben-driven edit (see ribbenPushUndoSnapshot) -- a separate history from Seamly2D's own QUndoStack, since Ribben edits mutate the DOM directly and never push a QUndoCommand.
+    QStringList                       m_ribbenRedoStack;
 
     void                              initRibbenAddon();
     void                              ribbenReparseOrRollback(QDomElement &parent, QDomElement &child);
+    void                              ribbenPushUndoSnapshot();
+    void                              ribbenReparseOrRestoreFromUndo();
+    QJsonObject                       ribbenRestoreSnapshot(QStringList &fromStack, QStringList &toStack);
 
     void                              removeEmptyLinesText(const QString &filename, bool isPattern);
     void                              saveBackupFile(const QString &filename) const;
